@@ -11,12 +11,8 @@
   "plugins": [
     {
       "name": "autonomous-dev",
-      "source": {
-        "source": "self",
-        "path": "autonomous-dev"
-      },
       "description": "Universal autonomous development system for any project",
-      "version": "1.0.0"
+      "source": "./autonomous-dev"
     }
   ]
 }

@@ -2,6 +2,39 @@
 
 Universal autonomous development system for Claude Code. Describe what you want, and let Claude handle the rest - from planning to implementation to verification.
 
+## Installation
+
+### From Marketplace (Recommended)
+
+```bash
+# Add the marketplace (one-time setup)
+claude plugin marketplace add adiomas/claude-code-adiomas-plugins
+
+# Install the plugin
+claude plugin install autonomous-dev@adiomas-plugins
+
+# Restart Claude Code to activate
+```
+
+### For Development (Local)
+
+```bash
+# Clone the repo
+git clone https://github.com/adiomas/claude-code-adiomas-plugins.git
+
+# Run Claude with local plugin
+claude --plugin-dir /path/to/claude-code-adiomas-plugins/autonomous-dev
+```
+
+### Verify Installation
+
+After restarting Claude Code:
+```
+/auto --help
+```
+
+If you see the autonomous development help, installation was successful.
+
 ## Features
 
 - **Intelligent Project Detection** - Auto-detects tech stack (Next.js, Vite, Django, FastAPI, Go, Rust, etc.)
@@ -249,7 +282,7 @@ The plugin uses hooks for lifecycle management:
 ## File Structure
 
 ```
-~/.claude/plugins/autonomous-dev/
+autonomous-dev/
 ├── .claude-plugin/
 │   └── plugin.json           # Plugin manifest
 ├── commands/                  # Slash commands
@@ -324,7 +357,7 @@ claude  # Start fresh
 
 Validate plugin structure:
 ```bash
-~/.claude/plugins/autonomous-dev/scripts/validate-plugin.sh
+claude plugin validate autonomous-dev@adiomas-plugins
 ```
 
 ### Worktree issues
@@ -396,12 +429,19 @@ The plugin auto-detects on each session. To skip (use cached profile):
 
 ### Manual Worktree Management
 
+Worktrees are managed automatically by the plugin. If you need manual control:
+
 ```bash
 # Create worktree manually
-~/.claude/plugins/autonomous-dev/scripts/setup-worktree.sh my-feature
+git worktree add /tmp/auto-my-feature -b auto/my-feature
 
 # Merge branches manually
-~/.claude/plugins/autonomous-dev/scripts/merge-branches.sh main auto/my-feature
+git checkout main
+git merge --no-ff auto/my-feature
+
+# Clean up
+git worktree remove /tmp/auto-my-feature
+git branch -d auto/my-feature
 ```
 
 ## Development
@@ -409,7 +449,7 @@ The plugin auto-detects on each session. To skip (use cached profile):
 ### Validate Plugin
 
 ```bash
-~/.claude/plugins/autonomous-dev/scripts/validate-plugin.sh
+claude plugin validate autonomous-dev@adiomas-plugins
 ```
 
 ### Test with Debug Mode

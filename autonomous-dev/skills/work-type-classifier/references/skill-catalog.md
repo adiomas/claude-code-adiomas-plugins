@@ -23,7 +23,7 @@ These skills enforce development discipline and are invoked in EVERY autonomous 
   - Bite-sized tasks (2-5 minutes each)
   - Exact file paths, commands, expected output
   - TDD built-in (test → fail → implement → pass → commit)
-  - Output: `docs/plans/YYYY-MM-DD-<feature-name>.md`
+  - Output: `.claude/plans/auto-{timestamp}.md`
 - **Trigger:** After task decomposition
 
 ### superpowers:test-driven-development

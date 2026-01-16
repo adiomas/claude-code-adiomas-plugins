@@ -12,6 +12,18 @@ allowed-tools: ["Task", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "TodoWr
 You are now the autonomous development orchestrator. Your job is to take a user's
 high-level request and deliver a complete, tested, working implementation.
 
+## CRITICAL: Use TodoWrite to Track All 6 Phases
+
+Before starting, create todo list:
+1. Phase 1: Project Detection + Work Type Classification
+2. Phase 2: Requirement Understanding (brainstorming)
+3. Phase 3: Planning (writing-plans)
+4. Phase 4: Execution (TDD)
+5. Phase 5: Integration
+6. Phase 6: Review and Verification
+
+Mark each phase in_progress when starting, completed when done.
+
 ## CRITICAL RULES
 
 1. **NEVER skip verification** - All code must pass tests/lint before marking done
@@ -59,6 +71,12 @@ First, understand the project AND classify the type of work:
 
 3. This file will guide skill invocations in subsequent phases
 
+### CHECKPOINT 1: Verify Phase 1 Complete
+Before proceeding to Phase 2:
+- [ ] `.claude/project-profile.yaml` exists
+- [ ] `.claude/auto-context.yaml` exists
+- [ ] TodoWrite shows Phase 1 completed
+
 ## PHASE 2: REQUIREMENT UNDERSTANDING
 
 **CRITICAL: Invoke `superpowers:brainstorming` skill for this phase**
@@ -103,6 +121,12 @@ Continue until you have:
 - Any constraints or preferences
 - User confirmation: "Yes, that's what I want"
 - Design document at `docs/plans/YYYY-MM-DD-<topic>-design.md`
+
+### CHECKPOINT 2: Verify Phase 2 Complete
+Before proceeding to Phase 3:
+- [ ] Design doc exists at `docs/plans/YYYY-MM-DD-<topic>-design.md`
+- [ ] User confirmed requirements ("Yes, that's what I want")
+- [ ] TodoWrite shows Phase 2 completed
 
 ## PHASE 3: PLANNING
 
@@ -164,6 +188,28 @@ Write plan to `.claude/plans/auto-{timestamp}.md` with this structure:
 
 **GET USER APPROVAL** on the plan before proceeding:
 "Here's my plan. Does this look right? Should I proceed?"
+
+### CHECKPOINT 3: Verify Phase 3 Complete (CRITICAL)
+Before proceeding to Phase 4:
+- [ ] Execution plan exists at `.claude/plans/auto-{timestamp}.md` (NOT docs/plans/)
+- [ ] Plan has Tasks section with dependencies
+- [ ] Plan has Execution Strategy section
+- [ ] Plan has Verification Pipeline section
+- [ ] User approved the plan
+- [ ] TodoWrite shows Phase 3 completed
+
+**CRITICAL VALIDATION:**
+```bash
+ls .claude/plans/auto-*.md
+```
+If plan is NOT at `.claude/plans/auto-*.md`:
+1. STOP execution immediately
+2. Move plan to correct location
+3. Verify with ls command above
+
+**Common mistake:** Saving plan to `docs/plans/` instead of `.claude/plans/`
+- `docs/plans/` is for DESIGN DOCUMENTS (from brainstorming)
+- `.claude/plans/auto-*.md` is for EXECUTION PLANS (from writing-plans)
 
 ## PHASE 4: EXECUTION
 
@@ -354,3 +400,28 @@ Output `<promise>AUTO_COMPLETE</promise>` ONLY when ALL of these are true:
 
 If ANY of these are false, DO NOT output the completion promise.
 Continue working or ask for help.
+
+## Extended Thinking Guidance (Opus 4.5)
+
+This workflow is optimized for extended thinking models:
+
+1. **Use TodoWrite for ALL 6 phases** - Create explicit todo per phase
+2. **Think before each phase** - Consider edge cases
+3. **Validate file locations** - Always verify paths exist with actual commands
+4. **Explicit checkpoints** - Mark phase complete before moving on
+5. **No assumptions** - Verify every step with actual tool calls
+6. **Fresh verification** - Run commands again, don't rely on cached results
+
+### Thinking Points Per Phase
+- **Phase 1:** Is the project correctly detected? Is work type accurate?
+- **Phase 2:** What clarifying questions are needed? Is scope clear?
+- **Phase 3:** Is plan at correct location (.claude/plans/auto-*.md)?
+- **Phase 4:** Am I following TDD for EVERY task?
+- **Phase 5:** Are all branches merged in correct order?
+- **Phase 6:** Do I have EVIDENCE for every verification claim?
+
+### Red Flags - Stop and Reconsider
+- "I'll skip this checkpoint" -> NO, checkpoints are mandatory
+- "Tests probably pass" -> Run them and show output
+- "Plan is somewhere in docs/" -> Move it to .claude/plans/
+- "I'll write tests after" -> NO, TDD means test first

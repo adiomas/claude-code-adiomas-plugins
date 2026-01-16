@@ -30,7 +30,9 @@ Invoke: superpowers:brainstorming
 - Explore alternatives before settling on approach
 - Create design document before proceeding
 
-**Output:** `docs/plans/YYYY-MM-DD-<topic>-design.md`
+**Output:** `docs/plans/YYYY-MM-DD-<topic>-design.md` (DESIGN DOCUMENT)
+
+> **Note:** This is a DESIGN DOCUMENT, not an execution plan. It describes WHAT to build.
 
 **Completion criteria:**
 - User confirmed "Yes, that's what I want"
@@ -52,7 +54,11 @@ Invoke: superpowers:writing-plans
 - TDD test cases built-in
 - File paths and expected outputs
 
-**Output:** `.claude/plans/auto-{timestamp}.md`
+**Output:** `.claude/plans/auto-{timestamp}.md` (EXECUTION PLAN)
+
+> **Note:** This is an EXECUTION PLAN, not a design document. It describes HOW to build
+> with atomic tasks, dependencies, and verification criteria. This is where `/auto-execute`
+> looks for plans. Do NOT save to `docs/plans/` - that's for design documents.
 
 ### Phase 4: Execution
 
@@ -230,3 +236,38 @@ Phase 6:
 | 4 | test-driven-development | systematic-debugging (if failure) |
 | 5 | - | finishing-a-development-branch |
 | 6 | verification-before-completion, requesting-code-review | receiving-code-review (if feedback), webapp-testing (if FRONTEND) |
+
+---
+
+## CRITICAL: Design Document vs Execution Plan
+
+The autonomous-dev workflow creates TWO different types of documents:
+
+| Type | Source Phase | Location | Purpose |
+|------|-------------|----------|---------|
+| **Design Document** | Phase 2 (brainstorming) | `docs/plans/YYYY-MM-DD-<topic>-design.md` | Describes WHAT to build (requirements, scope, criteria) |
+| **Execution Plan** | Phase 3 (writing-plans) | `.claude/plans/auto-{timestamp}.md` | Describes HOW to build (tasks, dependencies, verification) |
+
+### Common Mistake
+
+Saving the execution plan to `docs/plans/` instead of `.claude/plans/`.
+
+**Why this breaks things:**
+- `/auto-execute` searches ONLY in `.claude/plans/auto-*.md`
+- Plans at `docs/plans/` will NOT be found
+- User sees "No execution plan found" error
+
+### How to Fix
+
+If plan was saved to wrong location:
+```bash
+mkdir -p .claude/plans
+mv docs/plans/{file}.md .claude/plans/auto-{timestamp}.md
+```
+
+### Prevention
+
+Always verify plan location after Phase 3:
+```bash
+ls .claude/plans/auto-*.md
+```

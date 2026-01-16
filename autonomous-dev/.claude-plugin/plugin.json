@@ -1,0 +1,9 @@
+{
+  "name": "autonomous-dev",
+  "version": "1.0.0",
+  "description": "Universal autonomous development system for any project",
+  "author": {
+    "name": "User"
+  },
+  "keywords": ["autonomous", "development", "automation", "parallel", "git-worktree"]
+}

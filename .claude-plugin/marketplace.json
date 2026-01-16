@@ -1,0 +1,22 @@
+{
+  "name": "adiomas-plugins",
+  "owner": {
+    "name": "adiomas",
+    "email": "adiomas@users.noreply.github.com"
+  },
+  "metadata": {
+    "description": "Custom Claude Code plugins by adiomas",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "autonomous-dev",
+      "source": {
+        "source": "self",
+        "path": "autonomous-dev"
+      },
+      "description": "Universal autonomous development system for any project",
+      "version": "1.0.0"
+    }
+  ]
+}

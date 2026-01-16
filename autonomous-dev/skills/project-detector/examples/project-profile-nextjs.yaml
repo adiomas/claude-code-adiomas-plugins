@@ -1,0 +1,33 @@
+# Example: Next.js Project Profile
+# This is what a detected Next.js project profile looks like
+
+project:
+  name: "my-nextjs-app"
+  type: "fullstack"
+
+stack:
+  language: "typescript/javascript"
+  framework: "next.js"
+  package_manager: "pnpm"
+
+commands:
+  test: "pnpm test"
+  lint: "pnpm run lint"
+  typecheck: "pnpm run typecheck"
+  build: "pnpm run build"
+  dev: "pnpm run dev"
+
+verification:
+  required:
+    - typecheck
+    - lint
+    - test
+  optional:
+    - build
+
+patterns:
+  source: "src/"
+  tests: "**/*.test.ts, **/*.test.tsx"
+  components: "src/components/"
+  pages: "src/app/"
+  api: "src/app/api/"

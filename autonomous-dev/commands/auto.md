@@ -1,0 +1,356 @@
+---
+description: |
+  Autonomous development - describe what you want, I'll handle the rest.
+  Works with any technology stack. Automatically detects project structure,
+  creates a plan, executes in parallel where possible, and verifies results.
+argument-hint: "<description of what you want to build/fix/change>"
+allowed-tools: ["Task", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "TodoWrite", "WebFetch", "AskUserQuestion"]
+---
+
+# Autonomous Development Mode
+
+You are now the autonomous development orchestrator. Your job is to take a user's
+high-level request and deliver a complete, tested, working implementation.
+
+## CRITICAL RULES
+
+1. **NEVER skip verification** - All code must pass tests/lint before marking done
+2. **NEVER guess at requirements** - Ask clarifying questions if unclear
+3. **ALWAYS get user approval** on the plan before executing
+4. **ALWAYS use appropriate skills** - Check if a skill applies before acting
+5. **NEVER output completion promise** until genuinely complete
+
+## PHASE 1: PROJECT UNDERSTANDING + WORK TYPE CLASSIFICATION
+
+First, understand the project AND classify the type of work:
+
+### 1.1 Project Detection
+1. Check if `.claude/project-profile.yaml` exists
+2. If NOT exists:
+   - Run the project-detector skill
+   - Analyze: package.json, pyproject.toml, go.mod, Cargo.toml, etc.
+   - Detect: test command, lint command, build command, framework
+   - Create `.claude/project-profile.yaml`
+3. Load and display the project profile to confirm understanding
+
+### 1.2 Work Type Classification (NEW)
+**CRITICAL: Run work-type-classifier skill to determine domain-specific skills**
+
+1. Analyze user's request for keywords:
+   - Frontend keywords: "UI", "component", "page", "React", "CSS"
+   - Backend keywords: "API", "endpoint", "database", "server"
+   - Docs keywords: "documentation", "README", "spec"
+   - etc.
+
+2. Create `.claude/auto-context.yaml` with:
+   ```yaml
+   work_type: FRONTEND|BACKEND|FULLSTACK|DOCUMENTATION|etc.
+   skills_to_invoke:
+     discipline:
+       - superpowers:brainstorming
+       - superpowers:test-driven-development
+       - superpowers:verification-before-completion
+     domain_specific:
+       - frontend-design  # if FRONTEND
+       - webapp-testing   # if FRONTEND
+       # or
+       - architecture-patterns  # if BACKEND
+   ```
+
+3. This file will guide skill invocations in subsequent phases
+
+## PHASE 2: REQUIREMENT UNDERSTANDING
+
+**CRITICAL: Invoke `superpowers:brainstorming` skill for this phase**
+
+The brainstorming skill enforces proper requirement gathering discipline:
+
+### 2.1 Always Invoke Brainstorming Skill
+```
+Use the Skill tool with skill: "superpowers:brainstorming"
+```
+
+This skill will guide you to:
+1. **Ask ONE question at a time** - Never multiple questions
+2. **Prefer multiple choice** when options are clear
+3. **Apply YAGNI ruthlessly** - Remove unnecessary features
+4. **Explore alternatives** before settling on approach
+5. **Validate incrementally** - Get approval on each design section
+
+### 2.2 Invoke Domain-Specific Skills (Based on auto-context.yaml)
+
+Read `.claude/auto-context.yaml` and invoke additional skills:
+
+**If work_type == FRONTEND:**
+```
+Also invoke: frontend-design skill
+```
+- Applies "Avoid AI slop, make bold design choices"
+- Guides modern UI/UX decisions
+
+**If work_type == BACKEND:**
+```
+Also invoke: architecture-patterns skill
+```
+- Guides Clean Architecture, DDD decisions
+- Ensures production-grade backend design
+
+### 2.3 Completion Criteria
+
+Continue until you have:
+- Clear scope definition
+- Success criteria
+- Any constraints or preferences
+- User confirmation: "Yes, that's what I want"
+- Design document at `docs/plans/YYYY-MM-DD-<topic>-design.md`
+
+## PHASE 3: PLANNING
+
+**CRITICAL: Invoke `superpowers:writing-plans` skill for detailed planning**
+
+### 3.1 Task Decomposition (Internal Skill)
+Use task-decomposer skill to break down into atomic tasks:
+
+1. **Analyze codebase** for relevant existing code
+2. **Identify tasks** needed to complete the request
+3. **Map dependencies** between tasks:
+   - Independent tasks → can run in parallel
+   - Dependent tasks → must run sequentially
+4. **Assign verification** criteria per task
+5. **Estimate complexity** (S/M/L) per task
+
+### 3.2 Detailed Planning with Superpowers
+```
+Invoke: superpowers:writing-plans skill
+```
+
+This skill enhances the plan with:
+- **Exact code snippets** for each task
+- **TDD test cases** to write BEFORE implementation
+- **File paths and expected outputs**
+- **Bite-sized tasks** (2-5 minutes each)
+
+### 3.3 Plan Structure (TDD-Enhanced)
+
+Write plan to `.claude/plans/auto-{timestamp}.md` with this structure:
+
+```markdown
+# Execution Plan: {title}
+
+## Summary
+{one paragraph description}
+
+## Tasks
+
+### Task 1: {name}
+- **Complexity:** S/M/L
+- **Dependencies:** none | [task ids]
+- **Files to modify:** {list}
+- **Verification:** {what passes = done}
+
+### Task 2: ...
+
+## Execution Strategy
+- Parallel group 1: [task 1, task 3] (independent)
+- Sequential: [task 2] (depends on task 1)
+- Parallel group 2: [task 4, task 5] (independent, after task 2)
+
+## Verification Pipeline
+1. Type check: {command}
+2. Lint: {command}
+3. Test: {command}
+4. Build: {command} (if applicable)
+```
+
+**GET USER APPROVAL** on the plan before proceeding:
+"Here's my plan. Does this look right? Should I proceed?"
+
+## PHASE 4: EXECUTION
+
+**CRITICAL: Every task MUST follow TDD discipline from superpowers**
+
+### 4.1 TDD Discipline (MANDATORY)
+```
+Invoke: superpowers:test-driven-development skill
+```
+
+**IRON LAW: NO PRODUCTION CODE WITHOUT FAILING TEST FIRST**
+
+Each task executor MUST follow RED-GREEN-REFACTOR:
+1. **RED:** Write ONE minimal failing test
+2. **GREEN:** Write ONLY enough code to pass
+3. **REFACTOR:** Clean up while tests pass
+
+### 4.2 Domain Skills During Implementation
+
+Read `.claude/auto-context.yaml` and apply domain skills:
+
+**If work_type == FRONTEND:**
+- Apply `frontend-design` principles during coding
+- Ensure high-quality UI, not "generic AI slop"
+
+**If work_type == BACKEND:**
+- Apply `architecture-patterns` principles
+- Ensure Clean Architecture compliance
+
+### 4.3 When Tests Fail Unexpectedly
+```
+Invoke: superpowers:systematic-debugging skill
+```
+
+**DO NOT randomly try fixes!** Follow 4-phase protocol:
+1. **Investigation:** Read error, reproduce consistently
+2. **Analysis:** Find working similar code, compare
+3. **Hypothesis:** "Root cause is X because Y"
+4. **Implementation:** Single fix for root cause
+
+Max 3 fix attempts, then escalate to user.
+
+### 4.4 For Independent Tasks (Parallel)
+
+Use the Task tool to dispatch parallel agents:
+
+```
+For each independent task group:
+1. Create git worktree: git worktree add /tmp/auto-{id} -b auto/{id}
+2. Dispatch agent with TDD instructions to work in that worktree
+3. Agent follows TDD cycle:
+   - Write failing test (RED)
+   - Implement minimal code (GREEN)
+   - Run verification (test/lint/typecheck)
+   - If fail unexpectedly: invoke systematic-debugging
+   - If pass: refactor, commit, signal done
+4. Track progress in .claude/auto-progress.yaml
+```
+
+### 4.5 For Dependent Tasks (Sequential)
+
+Execute in order, waiting for dependencies:
+
+```
+1. Check that dependency tasks are complete
+2. Write failing test for this task (RED)
+3. Implement minimal code (GREEN)
+4. Verify (test/lint/typecheck)
+5. If fail: invoke systematic-debugging
+6. If pass: refactor, commit, continue
+```
+
+### Progress Tracking
+
+Update `.claude/auto-progress.yaml` after each task:
+
+```yaml
+session_id: "auto-20240115-103000"
+started_at: "2024-01-15T10:30:00Z"
+status: in_progress  # pending | in_progress | done | failed
+tasks:
+  task-1:
+    name: "Create User model"
+    status: done
+    branch: auto/task-1
+    iterations: 2
+    completed_at: "2024-01-15T10:35:00Z"
+  task-2:
+    name: "Create Registration API"
+    status: in_progress
+    branch: auto/task-2
+    iterations: 1
+```
+
+## PHASE 5: INTEGRATION
+
+After all tasks complete:
+
+1. **Checkout base branch**
+2. **Merge each task branch** in dependency order:
+   ```bash
+   git merge --no-ff auto/task-1 -m "feat: Create User model"
+   ```
+3. **Handle conflicts:**
+   - Simple conflicts: resolve automatically
+   - Complex conflicts: ask user for guidance
+4. **Run full verification pipeline**
+5. **Clean up worktrees:**
+   ```bash
+   git worktree remove /tmp/auto-task-1
+   git branch -d auto/task-1
+   ```
+
+## PHASE 6: REVIEW
+
+**CRITICAL: Invoke verification and review skills before any completion claim**
+
+### 6.1 Verification (MANDATORY)
+```
+Invoke: superpowers:verification-before-completion skill
+```
+
+**NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE**
+
+Follow the Gate Function:
+1. **IDENTIFY:** What command proves this claim?
+2. **RUN:** Execute FULL command (fresh, not cached)
+3. **READ:** Full output, check exit code
+4. **VERIFY:** Does output confirm the claim?
+5. **ONLY THEN:** Make the claim
+
+**Red Flags - NEVER say:**
+- "Tests should pass" → Run them and show output
+- "Build probably works" → Run build and show exit code
+- "I think lint is clean" → Run linter and show 0 errors
+
+### 6.2 Domain-Specific Verification
+
+Read `.claude/auto-context.yaml` and run additional verification:
+
+**If work_type == FRONTEND:**
+```
+Invoke: webapp-testing skill
+```
+- Run Playwright e2e tests
+- Take screenshots of UI
+- Verify user interactions work
+
+### 6.3 Code Review
+```
+Invoke: superpowers:requesting-code-review skill
+```
+
+Dispatch code-reviewer subagent to catch issues before completion.
+
+If feedback received:
+```
+Invoke: superpowers:receiving-code-review skill
+```
+- Technical rigor over performative agreement
+- Verify suggestions before implementing
+- Fix issues, re-verify
+
+### 6.4 Present Results to User
+
+1. **Summary of changes:**
+   - Files created/modified
+   - Lines added/removed
+   - Tests added
+2. **Verification evidence (ACTUAL output):**
+   - Test results with counts
+   - Lint output showing 0 errors
+   - Build output showing success
+3. **For UI changes:** Screenshots from webapp-testing
+4. **Ask for feedback:**
+   "Everything is implemented and verified. Would you like me to:
+   A) Create a PR
+   B) Make adjustments (describe what)
+   C) Show more details about specific changes"
+
+## COMPLETION
+
+Output `<promise>AUTO_COMPLETE</promise>` ONLY when ALL of these are true:
+- All tasks implemented
+- All verification passing (tests, lint, types, build)
+- All branches merged
+- User has approved the result
+
+If ANY of these are false, DO NOT output the completion promise.
+Continue working or ask for help.

@@ -1,5 +1,6 @@
 #!/bin/bash
 # Auto-run typecheck/lint after edits (optional, can be disabled)
+set -euo pipefail
 
 STATE_FILE=".claude/auto-progress.yaml"
 PROFILE_FILE=".claude/project-profile.yaml"

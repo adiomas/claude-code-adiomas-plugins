@@ -207,3 +207,14 @@ RED → GREEN → REFACTOR → MUTATE → ✓ Done
 **Pass if:**
 - Score >= 80%
 - All critical path mutations killed
+
+## When NOT to Use This Skill
+
+Do NOT use this skill when:
+
+1. **No mutation testing tool is configured** - Requires Stryker, mutmut, or similar
+2. **Tests are not yet written** - Run after TDD GREEN phase, not during RED
+3. **Pure UI/styling changes** - Mutation testing is for logic, not visuals
+4. **Generated code** - Don't mutate auto-generated files (Prisma clients, etc.)
+5. **Time-critical tasks** - Full mutation runs are slow; skip in urgent situations
+6. **Configuration files** - Mutation testing is for code logic only

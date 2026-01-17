@@ -1,6 +1,8 @@
 ---
 name: auto-audit
 description: Dedicated research/audit workflow for security audits, code analysis, and exploration tasks
+argument-hint: "<audit target and type, e.g., 'security audit of auth system'>"
+allowed-tools: ["Task", "Read", "Glob", "Grep", "Write", "AskUserQuestion", "TodoWrite"]
 ---
 
 # /auto-audit - Research & Audit Workflow

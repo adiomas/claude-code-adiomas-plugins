@@ -37,7 +37,7 @@ fi
 OUTPUT=""
 
 # Check if work type is set with low confidence
-if [[ -n "$WORK_TYPE" ]] && (( $(echo "$CONFIDENCE < 0.7" | bc -l 2>/dev/null || echo 0) )); then
+if [[ -n "$WORK_TYPE" ]] && awk "BEGIN {exit !($CONFIDENCE < 0.7)}"; then
     OUTPUT+="CLASSIFICATION_UNCERTAIN: Work type '$WORK_TYPE' detected with confidence ${CONFIDENCE}. "
     OUTPUT+="Consider asking user to confirm.\n"
 fi
@@ -71,8 +71,8 @@ TOKEN_BUDGET=$(yq -r '.token_usage.budget // 200000' "$STATE_MACHINE_FILE")
 WARNING_THRESHOLD=$(yq -r '.token_usage.warning_threshold // 0.80' "$STATE_MACHINE_FILE")
 
 if [[ "$TOKEN_ESTIMATED" -gt 0 && "$TOKEN_BUDGET" -gt 0 ]]; then
-    USAGE_PCT=$(echo "scale=2; $TOKEN_ESTIMATED / $TOKEN_BUDGET" | bc 2>/dev/null || echo "0")
-    if (( $(echo "$USAGE_PCT >= $WARNING_THRESHOLD" | bc -l 2>/dev/null || echo 0) )); then
+    USAGE_PCT=$(awk "BEGIN {printf \"%.2f\", $TOKEN_ESTIMATED / $TOKEN_BUDGET}")
+    if awk "BEGIN {exit !($USAGE_PCT >= $WARNING_THRESHOLD)}"; then
         OUTPUT+="TOKEN_WARNING: Context usage at approximately ${USAGE_PCT}%. Consider summarizing context.\n"
     fi
 fi

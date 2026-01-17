@@ -124,18 +124,18 @@ add_usage() {
 
     # Calculate usage percentage
     local usage_pct
-    usage_pct=$(echo "scale=4; $new_total / $budget" | bc 2>/dev/null || echo "0")
+    usage_pct=$(awk "BEGIN {printf \"%.4f\", $new_total / $budget}")
 
     # Check thresholds and return appropriate code
-    if (( $(echo "$usage_pct >= $checkpoint_threshold" | bc -l 2>/dev/null || echo 0) )); then
+    if awk "BEGIN {exit !($usage_pct >= $checkpoint_threshold)}"; then
         local pct_display
-        pct_display=$(echo "scale=0; $usage_pct * 100 / 1" | bc 2>/dev/null || echo "95")
+        pct_display=$(awk "BEGIN {printf \"%.0f\", $usage_pct * 100}")
         echo "TOKEN_CHECKPOINT: Usage at ${pct_display}% ($new_total / $budget tokens)"
         echo "ACTION: Trigger handoff procedure"
         return 2
-    elif (( $(echo "$usage_pct >= $warning_threshold" | bc -l 2>/dev/null || echo 0) )); then
+    elif awk "BEGIN {exit !($usage_pct >= $warning_threshold)}"; then
         local pct_display
-        pct_display=$(echo "scale=0; $usage_pct * 100 / 1" | bc 2>/dev/null || echo "80")
+        pct_display=$(awk "BEGIN {printf \"%.0f\", $usage_pct * 100}")
         echo "TOKEN_WARNING: Usage at ${pct_display}% ($new_total / $budget tokens)"
         echo "ACTION: Start context summarization"
         return 1
@@ -157,11 +157,11 @@ get_status() {
     checkpoint_pct=$(yq -r '.token_usage.checkpoint_threshold // 0.95' "$STATE_MACHINE_FILE")
 
     local usage_pct
-    usage_pct=$(echo "scale=2; $estimated * 100 / $budget" | bc 2>/dev/null || echo "0")
+    usage_pct=$(awk "BEGIN {printf \"%.2f\", $estimated * 100 / $budget}")
     local warning_tokens
-    warning_tokens=$(echo "scale=0; $budget * $warning_pct / 1" | bc 2>/dev/null || echo "160000")
+    warning_tokens=$(awk "BEGIN {printf \"%.0f\", $budget * $warning_pct}")
     local checkpoint_tokens
-    checkpoint_tokens=$(echo "scale=0; $budget * $checkpoint_pct / 1" | bc 2>/dev/null || echo "190000")
+    checkpoint_tokens=$(awk "BEGIN {printf \"%.0f\", $budget * $checkpoint_pct}")
     local remaining
     remaining=$((budget - estimated))
 

@@ -1,4 +1,5 @@
 ---
+name: auto-lite
 description: |
   Lightweight autonomous development for simple tasks.
   Skips brainstorming and planning phases - goes straight to execution.

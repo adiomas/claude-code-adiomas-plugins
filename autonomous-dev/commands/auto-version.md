@@ -1,5 +1,7 @@
 ---
+name: auto-version
 description: Show autonomous-dev plugin version
+argument-hint: ""
 allowed-tools: []
 ---
 

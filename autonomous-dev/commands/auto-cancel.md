@@ -1,5 +1,7 @@
 ---
+name: auto-cancel
 description: Cancel autonomous execution and clean up
+argument-hint: ""
 allowed-tools: ["Bash", "Write", "Read"]
 ---
 

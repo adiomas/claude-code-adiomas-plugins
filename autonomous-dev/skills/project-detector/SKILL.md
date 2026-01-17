@@ -133,3 +133,21 @@ Run the detection script directly:
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/scripts/detect-project.sh
 ```
+
+## When NOT to Use This Skill
+
+Do NOT use this skill when:
+
+1. **Profile already exists and is recent** - Skip if less than 1 day old
+2. **Empty directory** - No project to detect
+3. **Non-project directories** - Home folders, system directories, etc.
+4. **User explicitly provides tech stack** - Trust user input over detection
+5. **Monorepo sub-packages** - Detect from root, not from individual packages
+
+## Quality Standards
+
+1. **ALWAYS** check for existing profile before regenerating
+2. **NEVER** overwrite user-customized profile fields without confirmation
+3. **ALWAYS** detect database provider if dependencies exist
+4. **ALWAYS** check for MCP availability when database detected
+5. **PRIORITIZE** parsing package.json/pyproject.toml over guessing

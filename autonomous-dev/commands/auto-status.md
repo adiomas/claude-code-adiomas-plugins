@@ -1,5 +1,7 @@
 ---
+name: auto-status
 description: Check progress of autonomous execution
+argument-hint: ""
 allowed-tools: ["Read", "Bash"]
 ---
 

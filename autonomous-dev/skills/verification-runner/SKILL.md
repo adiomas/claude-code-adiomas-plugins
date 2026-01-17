@@ -100,3 +100,22 @@ Modes:
 - `all` - Run all verifications
 - `required` - Run only required verifications
 - `test` / `lint` / etc. - Run specific verification
+
+## When NOT to Use This Skill
+
+Do NOT use this skill when:
+
+1. **No project profile exists** - Run project-detector first
+2. **No verification commands configured** - Profile missing commands
+3. **User explicitly skips verification** - Respect user choice
+4. **Research/audit tasks** - Verification is for implementation only
+5. **Configuration-only changes** - Config changes don't need full test suite
+
+## Quality Standards
+
+1. **ALWAYS** run verifications in order: typecheck → lint → test → build
+2. **ALWAYS** stop on first required check failure
+3. **ALWAYS** attempt auto-fix for lint errors before failing
+4. **NEVER** mark task complete if required checks fail
+5. **ALWAYS** report clear summary of all verification results
+6. **PRIORITIZE** using `--changedSince` for faster test runs when available

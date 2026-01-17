@@ -14,12 +14,12 @@ WARNINGS=0
 # Helper functions
 error() {
     echo "❌ ERROR: $1"
-    ((ERRORS++))
+    ((ERRORS++)) || true
 }
 
 warn() {
     echo "⚠️  WARNING: $1"
-    ((WARNINGS++))
+    ((WARNINGS++)) || true
 }
 
 pass() {
@@ -59,7 +59,7 @@ if [[ -d "$PLUGIN_ROOT/skills" ]]; then
 
             if [[ -f "$skill_dir/SKILL.md" ]]; then
                 pass "Skill '$skill_name' has SKILL.md"
-                ((SKILL_COUNT++))
+                ((SKILL_COUNT++)) || true
 
                 # Check for description with trigger phrases
                 if grep -q "This skill should be used when" "$skill_dir/SKILL.md"; then
@@ -91,7 +91,7 @@ if [[ -d "$PLUGIN_ROOT/commands" ]]; then
         if [[ -f "$cmd_file" ]]; then
             cmd_name=$(basename "$cmd_file" .md)
             pass "Command: $cmd_name"
-            ((CMD_COUNT++))
+            ((CMD_COUNT++)) || true
         fi
     done
     echo "Total commands: $CMD_COUNT"
@@ -110,7 +110,7 @@ if [[ -d "$PLUGIN_ROOT/agents" ]]; then
             # Check for required fields
             if grep -q "^model:" "$agent_file" && grep -q "^color:" "$agent_file"; then
                 pass "Agent: $agent_name"
-                ((AGENT_COUNT++))
+                ((AGENT_COUNT++)) || true
 
                 # Check for examples in description
                 if grep -q "<example>" "$agent_file"; then
@@ -168,7 +168,7 @@ if [[ -d "$PLUGIN_ROOT/scripts" ]]; then
             # Check if executable or has shebang
             if [[ -x "$script" ]] || head -1 "$script" | grep -q "^#!/"; then
                 pass "Script: $script_name"
-                ((SCRIPT_COUNT++))
+                ((SCRIPT_COUNT++)) || true
             else
                 warn "Script '$script_name' missing shebang or not executable"
             fi

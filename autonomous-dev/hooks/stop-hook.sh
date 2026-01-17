@@ -152,14 +152,14 @@ if [[ -f "$STATE_MACHINE_FILE" ]]; then
     CHECKPOINT_THRESHOLD=$(yq -r '.token_usage.checkpoint_threshold // 0.95' "$STATE_MACHINE_FILE" 2>/dev/null || echo "0.95")
 
     if [[ "$TOKEN_ESTIMATED" -gt 0 && "$TOKEN_BUDGET" -gt 0 ]]; then
-        USAGE_PCT=$(echo "scale=4; $TOKEN_ESTIMATED / $TOKEN_BUDGET" | bc 2>/dev/null || echo "0")
+        USAGE_PCT=$(awk "BEGIN {printf \"%.4f\", $TOKEN_ESTIMATED / $TOKEN_BUDGET}")
 
-        if (( $(echo "$USAGE_PCT >= $CHECKPOINT_THRESHOLD" | bc -l 2>/dev/null || echo 0) )); then
+        if awk "BEGIN {exit !($USAGE_PCT >= $CHECKPOINT_THRESHOLD)}"; then
             # ==========================================================================
             # GRACEFUL DEGRADATION: Token budget exhausted
             # ==========================================================================
-
-            echo "Token budget at $(echo "scale=0; $USAGE_PCT * 100 / 1" | bc)%. Initiating graceful handoff..."
+            USAGE_DISPLAY=$(awk "BEGIN {printf \"%.0f\", $USAGE_PCT * 100}")
+            echo "Token budget at ${USAGE_DISPLAY}%. Initiating graceful handoff..."
 
             SCRIPT_DIR="$(dirname "$0")/.."
             if [[ -x "$SCRIPT_DIR/scripts/checkpoint-manager.sh" ]]; then

@@ -1,4 +1,5 @@
 ---
+name: auto
 description: |
   Autonomous development - describe what you want, I'll handle the rest.
   Works with any technology stack. Automatically detects project structure,

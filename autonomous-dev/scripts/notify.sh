@@ -1,4 +1,6 @@
 #!/bin/bash
+# Cross-platform notification script for autonomous-dev
+set -euo pipefail
 
 TITLE="${1:-Autonomous Dev}"
 MESSAGE="${2:-Task completed}"

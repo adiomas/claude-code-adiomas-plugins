@@ -182,3 +182,22 @@ For detailed decomposition patterns:
 
 Working examples in `examples/`:
 - **`example-decomposition.md`** - Complete example: "Add user registration with email verification"
+
+## When NOT to Use This Skill
+
+Do NOT use this skill when:
+
+1. **Single-file changes** - No decomposition needed for trivial tasks
+2. **Typo fixes and renames** - Skip for simple refactors
+3. **User provides explicit task list** - Trust user's own decomposition
+4. **Research/audit tasks** - Use research workflow instead
+5. **Documentation-only changes** - Docs don't need complex decomposition
+
+## Quality Standards
+
+1. **ALWAYS** identify dependencies between tasks explicitly
+2. **NEVER** create tasks that modify the same files in parallel
+3. **ALWAYS** include verification criteria ("Done when...")
+4. **ALWAYS** assign complexity (S/M/L) to each task
+5. **PRIORITIZE** breaking L-sized tasks into smaller S/M tasks
+6. **ALWAYS** write task plan to `.claude/plans/` directory

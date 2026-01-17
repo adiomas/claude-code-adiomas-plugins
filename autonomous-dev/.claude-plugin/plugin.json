@@ -3,7 +3,14 @@
   "version": "3.1.0",
   "description": "Sophisticated autonomous development with state machine, semantic classification, token management, and graceful degradation",
   "author": {
-    "name": "User"
+    "name": "Adiomas",
+    "email": "adiomas@example.com"
   },
-  "keywords": ["autonomous", "development", "automation", "parallel", "git-worktree"]
+  "license": "MIT",
+  "homepage": "https://github.com/adiomas/autonomous-dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adiomas/autonomous-dev.git"
+  },
+  "keywords": ["autonomous", "development", "automation", "parallel", "git-worktree", "state-machine", "token-management", "semantic-classification"]
 }

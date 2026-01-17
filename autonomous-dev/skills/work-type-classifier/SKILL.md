@@ -1,6 +1,8 @@
 ---
 name: work-type-classifier
 description: >
+  This skill should be used when the user initiates autonomous development
+  with /auto, /auto-lite, or similar commands to classify the type of work.
   Semantic work type classification with multi-layer detection.
   Analyzes user request using keywords, intent, output type, and confidence scoring.
   Automatically triggers ASK_USER if confidence is below threshold.
@@ -415,3 +417,13 @@ Question: "Što točno želiš poboljšati?
 3. **ALWAYS** include detected keywords and intents for transparency
 4. **ALWAYS** update state machine with work_type and confidence
 5. **PRIORITIZE** RESEARCH detection - audits should not run implementation workflow
+
+## When NOT to Use This Skill
+
+Do NOT use this skill when:
+
+1. **User explicitly specifies work type** - Trust user's classification
+2. **Resuming from checkpoint** - Use saved classification
+3. **Sequential simple commands** - Direct requests like "run tests"
+4. **Non-development tasks** - Questions, explanations, general queries
+5. **Already classified** - Check `.claude/auto-context.yaml` first

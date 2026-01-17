@@ -1,6 +1,8 @@
 ---
 name: auto-continue
 description: Resume autonomous execution from checkpoint after session interrupt or token limit
+argument-hint: ""
+allowed-tools: ["Task", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "TodoWrite"]
 ---
 
 # /auto-continue - Resume Autonomous Session

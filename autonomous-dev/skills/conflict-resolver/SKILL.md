@@ -106,6 +106,24 @@ Analyze intent and merge carefully:
 3. **When in doubt, ask** - wrong merges are worse than slow merges
 4. **Test after resolution** - run verification to catch merge errors
 
+## When NOT to Use This Skill
+
+Do NOT use this skill when:
+
+1. **No actual merge conflicts exist** - Only use when `git diff --name-only --diff-filter=U` returns files
+2. **Conflicts are in generated files** - Regenerate instead of resolving (package-lock.json, yarn.lock, dist/, build/)
+3. **Rebasing is more appropriate** - For feature branches behind main, prefer rebase over merge
+4. **User explicitly wants manual resolution** - When user says "I'll handle this myself"
+5. **Binary file conflicts** - Cannot merge binary files; user must choose one version
+
+## Quality Standards
+
+1. **ALWAYS** verify there are actual conflicts before proceeding
+2. **NEVER** auto-resolve conflicts involving business logic without understanding intent
+3. **ALWAYS** run tests after resolving to catch merge errors
+4. **ALWAYS** preserve both branches' functionality when possible
+5. **PRIORITIZE** asking user over guessing on complex conflicts
+
 ## Additional Resources
 
 ### Reference Files

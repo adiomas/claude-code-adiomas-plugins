@@ -1,4 +1,5 @@
 ---
+name: auto-execute
 description: Execute an existing plan
 argument-hint: "[plan-file-path]"
 allowed-tools: ["Task", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "TodoWrite"]

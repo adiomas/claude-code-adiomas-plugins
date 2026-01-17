@@ -279,13 +279,13 @@ update_token_usage() {
 
     # Calculate usage percentage
     local usage_pct
-    usage_pct=$(echo "scale=2; $new_total / $budget" | bc)
+    usage_pct=$(awk "BEGIN {printf \"%.2f\", $new_total / $budget}")
 
     # Check thresholds
-    if (( $(echo "$usage_pct >= $checkpoint_threshold" | bc -l) )); then
+    if awk "BEGIN {exit !($usage_pct >= $checkpoint_threshold)}"; then
         echo "TOKEN_CHECKPOINT: Usage at ${usage_pct}% - checkpoint required"
         return 2
-    elif (( $(echo "$usage_pct >= $warning_threshold" | bc -l) )); then
+    elif awk "BEGIN {exit !($usage_pct >= $warning_threshold)}"; then
         echo "TOKEN_WARNING: Usage at ${usage_pct}% - start summarization"
         return 1
     fi

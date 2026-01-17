@@ -211,3 +211,23 @@ parallelization:
   auto_cleanup: true      # Remove worktrees after merge
   retry_on_failure: 3     # Retry failed agents N times
 ```
+
+## When NOT to Use This Skill
+
+Do NOT use this skill when:
+
+1. **Less than 3 independent tasks** - Overhead outweighs benefits for small task counts
+2. **All tasks have linear dependencies** - Sequential execution is required
+3. **Single file changes** - Use simple sequential execution
+4. **User disabled parallelization** - Check `parallelization.enabled` in config
+5. **Limited system resources** - Worktrees consume disk space
+6. **Shared mutable state** - Tasks that write to same files cannot parallelize
+
+## Quality Standards
+
+1. **ALWAYS** check pre-flight conditions before creating worktrees
+2. **ALWAYS** display execution mode (PARALLEL or SEQUENTIAL) to user
+3. **NEVER** exceed `max_agents` configuration setting
+4. **ALWAYS** handle failed agents with retry logic
+5. **ALWAYS** clean up worktrees after successful merge
+6. **PRIORITIZE** running conflict-resolver skill if merge fails

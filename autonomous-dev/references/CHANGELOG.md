@@ -5,6 +5,24 @@ All notable changes to the autonomous-dev plugin will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.1] - 2025-01-17
+
+### Fixed
+- Shell scripts arithmetic operations failing with `set -e`
+- Replaced all `bc` usage with `awk` for cross-platform compatibility
+
+### Added
+- `check-dependencies.sh` for dependency validation
+- `recover-state.sh` for state recovery
+- Test suite in `tests/` directory
+- `references/ARCHITECTURE.md` explaining plugin architecture
+- "When NOT to use" sections in all skills
+- "Quality Standards" sections in all skills
+
+### Changed
+- All scripts now use `set -euo pipefail`
+- All commands now have `name` and `argument-hint` fields
+
 ## [3.1.0] - 2025-01-17
 
 ### Added
@@ -12,15 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - State machine architecture for workflow management
 - Token budget monitoring with graceful degradation
 - Checkpoint system for session resume capability
-- Dependency checking script (`check-dependencies.sh`)
-- "When NOT to use" sections in all skills
-- Quality Standards sections in all skills
 - Database provider detection (Supabase, Firebase, Prisma, etc.)
 - MCP availability detection for schema validation
 
 ### Changed
-- Replaced all `bc` usage with `awk` for cross-platform compatibility
-- All scripts now use `set -euo pipefail` for robustness
 - Updated plugin.json with license, homepage, repository fields
 - Improved skill trigger phrases for better auto-detection
 

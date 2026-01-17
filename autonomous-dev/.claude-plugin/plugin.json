@@ -8,10 +8,7 @@
   },
   "license": "MIT",
   "homepage": "https://github.com/adiomas/autonomous-dev",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/adiomas/autonomous-dev.git"
-  },
+  "repository": "https://github.com/adiomas/autonomous-dev.git",
   "keywords": [
     "autonomous",
     "development",

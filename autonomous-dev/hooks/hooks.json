@@ -1,5 +1,5 @@
 {
-  "description": "Autonomous development lifecycle hooks",
+  "description": "Autonomous development v3.0 lifecycle hooks with state machine integration",
   "hooks": {
     "SessionStart": [
       {
@@ -9,6 +9,11 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/detect-project.sh",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/pre-phase-hook.sh",
+            "timeout": 10
           }
         ]
       }
@@ -38,6 +43,16 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/continuous-rebase.sh",
             "timeout": 120
+          }
+        ]
+      },
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/pre-phase-hook.sh",
+            "timeout": 10
           }
         ]
       }

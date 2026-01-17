@@ -1,7 +1,7 @@
 {
   "name": "autonomous-dev",
-  "version": "2.0.0",
-  "description": "Zero-error autonomous development with pre-merge validation, mutation testing, and MCP integration",
+  "version": "3.0.0",
+  "description": "Sophisticated autonomous development with state machine, semantic classification, token management, and graceful degradation",
   "author": {
     "name": "User"
   },

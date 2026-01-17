@@ -1,182 +1,417 @@
 ---
 name: work-type-classifier
 description: >
-  This skill should be used when starting any /auto command, when the user
-  asks to "classify work type", "detect domain skills", or "create skill
-  activation plan". It classifies the type of work requested (FRONTEND,
-  BACKEND, FULLSTACK, etc.) and determines which domain-specific skills
-  should be invoked during implementation. Analyzes keywords like "UI",
-  "component", "API", "backend", "docs", "PDF" in user request and outputs
-  a skill activation plan to .claude/auto-context.yaml.
+  Semantic work type classification with multi-layer detection.
+  Analyzes user request using keywords, intent, output type, and confidence scoring.
+  Automatically triggers ASK_USER if confidence is below threshold.
+  Outputs skill activation plan to .claude/auto-context.yaml.
 ---
 
-# Work Type Classifier
+# Work Type Classifier v3.0
 
-Analyze user requests to determine work type and map to relevant domain-specific skills for optimal autonomous development quality.
+Multi-layer semantic classification for autonomous development requests.
+
+## Classification Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  SEMANTIC CLASSIFIER v3.0                                       │
+├─────────────────────────────────────────────────────────────────┤
+│  Layer 1: Keyword Detection (base score)                        │
+│  Layer 2: Intent Analysis (modifier)                            │
+│  Layer 3: Output Type Detection (modifier)                      │
+│  Layer 4: Confidence Calculation + User Fallback                │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Layer 1: Keyword Detection
+
+Scan for explicit work type indicators:
+
+### FRONTEND Keywords (score: +1 each)
+```
+English: "UI", "component", "page", "design", "frontend", "React", "Vue",
+         "CSS", "Tailwind", "button", "form", "modal", "layout", "style",
+         "responsive", "mobile", "animation", "theme", "dark mode", "UX"
+
+Croatian: "dizajn", "komponenta", "stranica", "sučelje", "gumb", "obrazac",
+          "izgled", "tema", "animacija", "responzivan"
+
+Frameworks: "Next.js", "Nuxt", "Svelte", "Astro", "Remix", "Vite"
+```
+
+### BACKEND Keywords (score: +1 each)
+```
+English: "API", "endpoint", "backend", "database", "server", "REST",
+         "GraphQL", "authentication", "middleware", "microservice",
+         "queue", "worker", "cron", "webhook", "migration"
+
+Croatian: "baza podataka", "autentikacija", "server", "pozadina"
+
+Frameworks: "Express", "FastAPI", "Django", "Rails", "Nest.js"
+```
+
+### RESEARCH Keywords (score: +1 each)
+```
+English: "audit", "analyze", "review", "explore", "investigate", "check",
+         "find", "search", "assess", "evaluate", "security", "performance",
+         "vulnerability", "bottleneck", "report"
+
+Croatian: "provjeri", "analiziraj", "istraži", "pregledaj", "sigurnost",
+          "audit", "ranjivost", "procijeni"
+```
+
+### DOCUMENTATION Keywords (score: +1 each)
+```
+English: "docs", "documentation", "README", "spec", "proposal", "guide"
+Croatian: "dokumentacija", "upute", "specifikacija"
+```
+
+### CREATIVE Keywords (score: +1 each)
+```
+English: "art", "visual", "poster", "GIF", "animation", "graphic", "logo"
+Croatian: "umjetnost", "vizualno", "plakat", "grafika"
+```
+
+## Layer 2: Intent Analysis
+
+Detect user's underlying intent beyond explicit keywords:
+
+### DESIGN_QUALITY Intent
+```
+Triggers: "beautiful", "stunning", "impressive", "wow", "amazing",
+          "perfect", "professional", "polished", "elegant"
+Croatian:  "lijep", "impresivan", "savršen", "profesionalan", "ocarati",
+           "oduševiti", "elegantan", "moderan"
+
+Effect: If FRONTEND detected, adds DESIGN_QUALITY focus
+        → Forces frontend-design skill invocation
+```
+
+### SECURITY Intent
+```
+Triggers: "secure", "safe", "vulnerability", "attack", "hack", "protect",
+          "OWASP", "injection", "XSS", "CSRF"
+Croatian:  "siguran", "zaštita", "napad", "ranjivost"
+
+Effect: Adds SECURITY focus to any work type
+        → Forces security-focused code review
+```
+
+### PERFORMANCE Intent
+```
+Triggers: "fast", "quick", "optimize", "speed", "slow", "performance",
+          "efficient", "bottleneck", "scale"
+Croatian:  "brzo", "optimiziraj", "sporo", "performanse", "efikasno"
+
+Effect: Adds PERFORMANCE focus
+        → Forces performance analysis patterns
+```
+
+### MULTIPLE_OUTPUTS Intent
+```
+Triggers: Numbers + nouns: "5 pages", "3 components", "several", "multiple"
+Croatian:  "5 stranica", "3 komponente", "nekoliko", "više"
+
+Effect: Indicates multiple deliverables expected
+        → Adjusts planning for parallel work
+```
+
+## Layer 3: Output Type Detection
+
+Determine what the user expects as output:
+
+### IMPLEMENTATION Output
+```
+Triggers: "build", "create", "implement", "add", "make", "develop", "code"
+Croatian:  "napravi", "izradi", "implementiraj", "dodaj", "razvij"
+
+Result: Standard implementation workflow (7 phases)
+```
+
+### RESEARCH Output
+```
+Triggers: "audit", "analyze", "review", "report", "findings", "assess"
+Croatian:  "auditiraj", "analiziraj", "pregled", "izvještaj", "procjena"
+
+Result: Research workflow (R1-R4)
+        → Switches to /auto-audit flow
+```
+
+### DOCUMENTATION Output
+```
+Triggers: "document", "write docs", "explain", "describe"
+Croatian:  "dokumentiraj", "objasni", "opiši"
+
+Result: Documentation workflow
+```
+
+## Layer 4: Confidence Calculation
+
+### Scoring Formula
+```
+base_score = sum(keyword_matches) * keyword_weight
+intent_modifier = sum(intent_matches) * intent_weight
+output_modifier = output_type_match * output_weight
+
+total_score = base_score + intent_modifier + output_modifier
+
+confidence = total_score / max_possible_score
+```
+
+### Weights
+```yaml
+keyword_weight: 1.0
+intent_weight: 0.5
+output_weight: 0.3
+```
+
+### Thresholds
+```yaml
+confident: >= 0.70      # Proceed without asking
+uncertain: 0.40 - 0.69  # ASK USER to confirm
+ambiguous: < 0.40       # ASK USER to specify
+```
+
+### Tie-Breaking Rules
+When multiple work types score equally:
+1. If RESEARCH keywords present → RESEARCH wins
+2. If FRONTEND + BACKEND equal → FULLSTACK
+3. If still tied → ASK USER
 
 ## Classification Process
 
-### Step 1: Analyze User Request Keywords
+### Step 1: Run All Layers
+```python
+# Pseudocode
+keywords = detect_keywords(request)
+intents = analyze_intent(request)
+output_type = detect_output_type(request)
 
-Scan the user's feature request for keywords indicating work type:
+scores = calculate_scores(keywords, intents, output_type)
+work_type = get_highest_score(scores)
+confidence = calculate_confidence(scores)
+```
 
-| Keywords | Work Type | Primary Skills to Invoke |
-|----------|-----------|--------------------------|
-| "UI", "component", "page", "design", "frontend", "React", "Vue", "CSS", "Tailwind", "button", "form", "modal" | FRONTEND | `frontend-design`, `webapp-testing` |
-| "API", "endpoint", "backend", "database", "server", "REST", "GraphQL", "authentication", "middleware" | BACKEND | `architecture-patterns`, `api-design-principles` |
-| "full stack", "app", "application", "feature" (ambiguous) | FULLSTACK | `frontend-design`, `architecture-patterns` |
-| "docs", "documentation", "README", "spec", "proposal", "technical doc" | DOCUMENTATION | `doc-coauthoring` |
-| "PDF", "Word", "Excel", "PowerPoint", "spreadsheet", "presentation", "document" | DOCUMENTS | `pdf`, `docx`, `xlsx`, `pptx` |
-| "integration", "external API", "MCP", "webhook", "third-party" | INTEGRATION | `mcp-builder` |
-| "test", "e2e", "Playwright", "testing", "coverage" | TESTING | `webapp-testing`, `test-driven-development` |
-| "art", "visual", "poster", "GIF", "animation", "graphic" | CREATIVE | `canvas-design`, `algorithmic-art` |
+### Step 2: Check Confidence
+```python
+if confidence >= 0.70:
+    proceed_with_classification(work_type)
+elif confidence >= 0.40:
+    ask_user_to_confirm(work_type, confidence)
+else:
+    ask_user_to_specify()
+```
 
-### Step 2: Output Skill Activation Plan
+### Step 3: User Confirmation (if needed)
 
-Create `.claude/auto-context.yaml` with detected information:
+When confidence < 0.70, use AskUserQuestion:
+```
+Detektiram [WORK_TYPE] task s [FOCUS] fokusom (confidence: [X]%).
 
+Jesi li to točno?
+- Da, nastavi
+- Ne, ovo je [alternativa]
+- Promijeni na: [custom]
+```
+
+### Step 4: Output Classification
+
+Create `.claude/auto-context.yaml`:
 ```yaml
-# Auto-generated by work-type-classifier
-# DO NOT EDIT - regenerated on each /auto command
+# Auto-generated by work-type-classifier v3.0
+# Generated: <timestamp>
 
-request_analysis:
-  original_request: "<user's original request>"
+classification:
+  work_type: FRONTEND | BACKEND | FULLSTACK | RESEARCH | DOCUMENTATION | CREATIVE
+  confidence: 0.85
+  user_confirmed: false | true
+
+  # Layer 1 results
   detected_keywords:
-    - keyword1
-    - keyword2
-  work_type: FRONTEND|BACKEND|FULLSTACK|DOCUMENTATION|DOCUMENTS|INTEGRATION|TESTING|CREATIVE
+    - "dizajn"
+    - "prototip"
+    - "UI"
 
+  # Layer 2 results
+  detected_intents:
+    - DESIGN_QUALITY
+
+  # Layer 3 results
+  output_type: IMPLEMENTATION | RESEARCH | DOCUMENTATION
+
+focus:
+  - DESIGN_QUALITY   # If detected
+  - SECURITY         # If detected
+  - PERFORMANCE      # If detected
+  - MULTIPLE_OUTPUTS # If detected
+
+# Skill activation based on classification
 skills_to_invoke:
-  # Always invoked regardless of work type
+  # Always invoked
   discipline:
     - superpowers:brainstorming
+    - superpowers:writing-plans
     - superpowers:test-driven-development
-    - superpowers:systematic-debugging
     - superpowers:verification-before-completion
     - superpowers:requesting-code-review
 
-  # Invoked based on detected work type
+  # Based on work_type
   domain_specific:
-    - skill-name-1
-    - skill-name-2
+    - <skill-1>
+    - <skill-2>
 
-  # Optional skills that may help
-  optional:
-    - optional-skill-1
+  # If focus detected
+  focus_skills:
+    - <focus-skill-1>
 
+# Phase-specific instructions
 phase_instructions:
   phase_2:
-    - "Invoke superpowers:brainstorming"
-    - "If FRONTEND: Also invoke frontend-design for design guidance"
+    - "MANDATORY: Invoke skills from domain_specific list"
   phase_4:
-    - "Invoke superpowers:test-driven-development for EVERY task"
-    - "If FRONTEND: Apply frontend-design principles during implementation"
+    - "MANDATORY: Apply TDD"
+    - "MANDATORY: Apply domain_specific skills during implementation"
   phase_6:
-    - "Invoke superpowers:verification-before-completion"
-    - "If FRONTEND: Run webapp-testing with Playwright"
+    - "MANDATORY: Run fresh verification"
 ```
 
-### Step 3: Skill Mapping by Work Type
+## Skill Mapping by Work Type
 
-#### FRONTEND Work Type
+### FRONTEND
 ```yaml
 domain_specific:
-  - frontend-design      # "Avoid AI slop, make bold design choices"
-  - webapp-testing       # Playwright e2e testing
-optional:
-  - ux-designer          # Accessibility, user experience
-  - artifacts-builder    # Complex React artifacts
+  - frontend-design      # ALWAYS for FRONTEND
+  - webapp-testing       # E2E testing
+focus_skills:
+  DESIGN_QUALITY:
+    - frontend-design    # Double emphasis
 ```
 
-#### BACKEND Work Type
+### BACKEND
 ```yaml
 domain_specific:
-  - architecture-patterns    # Clean Architecture, DDD
-  - api-design-principles    # REST/GraphQL best practices
-optional:
-  - mcp-builder             # If external integrations needed
-  - senior-architect        # Complex system design
+  - architecture-patterns
+  - api-design-principles
+focus_skills:
+  SECURITY:
+    - code-reviewer (security mode)
 ```
 
-#### FULLSTACK Work Type
+### FULLSTACK
 ```yaml
 domain_specific:
   - frontend-design
   - architecture-patterns
-optional:
-  - webapp-testing
-  - api-design-principles
 ```
 
-#### DOCUMENTATION Work Type
+### RESEARCH
+```yaml
+domain_specific: []      # No implementation skills
+workflow: "research"     # Use R1-R4 workflow
+output: "docs/audits/"
+```
+
+### DOCUMENTATION
 ```yaml
 domain_specific:
-  - doc-coauthoring         # Technical docs, proposals
-optional:
-  - internal-comms          # Status reports, newsletters
+  - doc-coauthoring
 ```
 
-#### DOCUMENTS Work Type
+### CREATIVE
 ```yaml
 domain_specific:
-  - pdf                     # PDF manipulation
-  - docx                    # Word documents
-  - xlsx                    # Spreadsheets
-  - pptx                    # Presentations
+  - canvas-design
+  - algorithmic-art
 ```
 
-#### INTEGRATION Work Type
-```yaml
-domain_specific:
-  - mcp-builder             # MCP server creation
-optional:
-  - api-design-principles   # API design for integrations
+## Integration with State Machine
+
+After classification, update state machine:
+```bash
+# scripts/state-transition.sh
+state-transition.sh work-type "$WORK_TYPE" "$FOCUS" "$CONFIDENCE"
 ```
 
-#### CREATIVE Work Type
-```yaml
-domain_specific:
-  - canvas-design           # Visual art, posters
-  - algorithmic-art         # Generative art, p5.js
-optional:
-  - slack-gif-creator       # Animated GIFs
-  - brand-guidelines        # Branding
+This ensures mandatory skills are enforced by the pre-phase hook.
+
+## Examples
+
+### Example 1: Croatian Frontend Request
+```
+Input: "ajde napravi 5 savršenih prototipova dizajna koji ce ocarati usere"
+
+Layer 1 (Keywords):
+  - "dizajna" → FRONTEND (+1)
+  - "prototipova" → FRONTEND (+1)
+
+Layer 2 (Intent):
+  - "savršenih" → DESIGN_QUALITY
+  - "ocarati" → DESIGN_QUALITY
+
+Layer 3 (Output):
+  - "napravi" → IMPLEMENTATION
+  - "5" → MULTIPLE_OUTPUTS
+
+Result:
+  work_type: FRONTEND
+  confidence: 0.85
+  focus: [DESIGN_QUALITY, MULTIPLE_OUTPUTS]
+  mandatory_skills: [frontend-design, webapp-testing]
 ```
 
-## Integration with Phases
+### Example 2: Security Audit Request
+```
+Input: "audit auth feature and tell me if everything is secure"
 
-### How Other Phases Use auto-context.yaml
+Layer 1 (Keywords):
+  - "audit" → RESEARCH (+1)
+  - "auth" → BACKEND (+1)
 
-Each subsequent phase reads `.claude/auto-context.yaml` to know which skills to invoke:
+Layer 2 (Intent):
+  - "secure" → SECURITY
 
-**Phase 2 (Requirement Understanding):**
-```markdown
-1. Read .claude/auto-context.yaml
-2. ALWAYS invoke: superpowers:brainstorming
-3. IF work_type == "FRONTEND": ALSO invoke frontend-design
-4. IF work_type == "BACKEND": ALSO invoke architecture-patterns
+Layer 3 (Output):
+  - "audit" → RESEARCH output
+  - "tell me" → REPORT expected
+
+Result:
+  work_type: RESEARCH
+  confidence: 0.90
+  focus: [SECURITY]
+  workflow: research (R1-R4)
+  output: docs/audits/
 ```
 
-**Phase 4 (Parallel Execution):**
-```markdown
-1. Read .claude/auto-context.yaml
-2. ALWAYS invoke: superpowers:test-driven-development
-3. Apply domain_specific skills during implementation
-4. IF test fails: invoke superpowers:systematic-debugging
+### Example 3: Ambiguous Request
 ```
+Input: "make the app better"
 
-**Phase 6 (Review):**
-```markdown
-1. Read .claude/auto-context.yaml
-2. ALWAYS invoke: superpowers:verification-before-completion
-3. IF work_type == "FRONTEND": Run webapp-testing (Playwright)
-4. ALWAYS invoke: superpowers:requesting-code-review
+Layer 1 (Keywords):
+  - "app" → FULLSTACK (+0.5)
+
+Layer 2 (Intent):
+  - "better" → (ambiguous)
+
+Layer 3 (Output):
+  - "make" → IMPLEMENTATION
+
+Result:
+  work_type: FULLSTACK
+  confidence: 0.35
+  ACTION: ASK_USER
+
+Question: "Što točno želiš poboljšati?
+- Frontend/UI dizajn
+- Backend/API performanse
+- Oboje
+- Nešto drugo"
 ```
 
 ## Quality Standards
 
-- ALWAYS create `.claude/auto-context.yaml` at start of /auto command
-- ALWAYS include discipline skills regardless of work type
-- Classify work type based on MAJORITY of keywords found
-- If ambiguous, default to FULLSTACK
-- Log classification reasoning for transparency
+1. **ALWAYS** create `.claude/auto-context.yaml` before Phase 2
+2. **NEVER** proceed with confidence < 0.40 without user input
+3. **ALWAYS** include detected keywords and intents for transparency
+4. **ALWAYS** update state machine with work_type and confidence
+5. **PRIORITIZE** RESEARCH detection - audits should not run implementation workflow

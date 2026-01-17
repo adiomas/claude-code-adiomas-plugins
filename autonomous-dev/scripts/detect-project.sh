@@ -307,3 +307,32 @@ if [[ ${#OPTIONAL[@]} -gt 0 ]]; then
 fi
 
 echo "Project profile created: $PROFILE_FILE"
+
+# =============================================================================
+# STATE MACHINE INITIALIZATION (v3.0)
+# =============================================================================
+
+STATE_MACHINE_FILE=".claude/auto-state-machine.yaml"
+
+# Initialize state machine if autonomous session exists but no state machine
+if [[ -f ".claude/auto-progress.yaml" ]] && [[ ! -f "$STATE_MACHINE_FILE" ]]; then
+    # Migrate existing session to state machine
+    SCRIPT_DIR="$(dirname "$0")"
+    if [[ -x "$SCRIPT_DIR/state-transition.sh" ]]; then
+        "$SCRIPT_DIR/state-transition.sh" init "EXECUTE"
+        echo "State machine initialized for existing session"
+    fi
+fi
+
+# Check for interrupted session and output resume info
+if [[ -f "$STATE_MACHINE_FILE" ]]; then
+    CURRENT_STATE=$(yq -r '.current_state // "IDLE"' "$STATE_MACHINE_FILE" 2>/dev/null || echo "IDLE")
+    if [[ "$CURRENT_STATE" != "IDLE" && "$CURRENT_STATE" != "COMPLETE" ]]; then
+        echo ""
+        echo "=== PREVIOUS SESSION DETECTED ==="
+        echo "State: $CURRENT_STATE"
+        echo "Run /auto-continue to resume or /auto-cancel to start fresh"
+        echo "================================="
+        echo ""
+    fi
+fi

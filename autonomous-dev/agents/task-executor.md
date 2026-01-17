@@ -88,10 +88,40 @@ Execute exactly ONE atomic task from a development plan, ensuring it passes all 
 3. Improve naming
 4. Run ALL tests - must still pass
 
+#### MUTATE Phase (NEW - Prove Test Quality)
+
+After REFACTOR, verify tests actually catch bugs:
+
+1. **Run mutation testing** on changed files only:
+   ```bash
+   # For TypeScript/JS
+   npx stryker run --mutate "src/path/to/changed/file.ts"
+
+   # For Python
+   mutmut run --paths-to-mutate=src/path/to/changed/
+   ```
+
+2. **Check mutation score:**
+   - >= 80% for critical paths (auth, payments) → PASS
+   - >= 60% for normal code → PASS
+   - < 60% → Add more tests
+
+3. **If score too low:**
+   - Analyze surviving mutants (which mutations weren't caught)
+   - Add edge case tests for those specific mutations
+   - Return to RED phase with new test
+   - Re-run mutation testing
+
+4. **Skip mutation testing if:**
+   - Task is documentation only
+   - Task is config/types only (non-executable)
+   - No test framework detected
+
 **Red Flags - STOP if you think:**
 - "This is too simple to test" → Test takes 30 seconds, do it
 - "I'll write tests after" → NO, test first always
 - "Let me just add this extra feature" → YAGNI, stick to task
+- "Mutation testing takes too long" → Run on changed files only
 
 ### When Tests Fail Unexpectedly
 
@@ -127,12 +157,19 @@ Run verification in order until all pass:
 1. **Typecheck** (if applicable)
 2. **Lint** (auto-fix if possible)
 3. **Test** (relevant tests only)
+4. **Mutation score** (if TDD applied - from MUTATE phase)
 
 If any check fails:
 - Analyze the error
 - Fix the issue
 - Re-run verification
 - Maximum 5 retry iterations
+
+**Verification is complete when:**
+- [ ] Typecheck passes (no type errors)
+- [ ] Lint passes (no lint errors)
+- [ ] Tests pass (all relevant tests green)
+- [ ] Mutation score >= threshold (if applicable)
 
 ### Phase 4: Commit
 

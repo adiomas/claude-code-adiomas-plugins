@@ -12,15 +12,16 @@ allowed-tools: ["Task", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "TodoWr
 You are now the autonomous development orchestrator. Your job is to take a user's
 high-level request and deliver a complete, tested, working implementation.
 
-## CRITICAL: Use TodoWrite to Track All 6 Phases
+## CRITICAL: Use TodoWrite to Track All 7 Phases
 
 Before starting, create todo list:
-1. Phase 1: Project Detection + Work Type Classification
+1. Phase 1: Project Detection + Work Type Classification + Database Detection
 2. Phase 2: Requirement Understanding (brainstorming)
 3. Phase 3: Planning (writing-plans)
-4. Phase 4: Execution (TDD)
-5. Phase 5: Integration
-6. Phase 6: Review and Verification
+4. Phase 4: Execution (TDD + Mutation Testing)
+5. Phase 4.5: Integration Validation (NEW - pre-merge testing)
+6. Phase 5: Integration (merge branches)
+7. Phase 6: Review and Verification
 
 Mark each phase in_progress when starting, completed when done.
 
@@ -42,8 +43,13 @@ First, understand the project AND classify the type of work:
    - Run the project-detector skill
    - Analyze: package.json, pyproject.toml, go.mod, Cargo.toml, etc.
    - Detect: test command, lint command, build command, framework
+   - **NEW: Detect database provider** (Supabase, Firebase, Prisma, etc.)
+   - **NEW: Check MCP availability** for schema validation
    - Create `.claude/project-profile.yaml`
 3. Load and display the project profile to confirm understanding
+4. **If database detected with MCP:**
+   - Inform user: "Schema validation will use real-time MCP queries"
+   - This enables automatic type/schema mismatch detection
 
 ### 1.2 Work Type Classification (NEW)
 **CRITICAL: Run work-type-classifier skill to determine domain-specific skills**
@@ -222,10 +228,30 @@ Invoke: superpowers:test-driven-development skill
 
 **IRON LAW: NO PRODUCTION CODE WITHOUT FAILING TEST FIRST**
 
-Each task executor MUST follow RED-GREEN-REFACTOR:
+Each task executor MUST follow RED-GREEN-REFACTOR-**MUTATE**:
 1. **RED:** Write ONE minimal failing test
 2. **GREEN:** Write ONLY enough code to pass
 3. **REFACTOR:** Clean up while tests pass
+4. **MUTATE (NEW):** Run mutation testing to prove test quality
+
+### 4.1.1 Mutation Testing (NEW)
+
+After GREEN phase, verify tests actually catch bugs:
+
+```
+Use mutation-tester skill
+```
+
+**Mutation Score Requirements:**
+- Critical paths (auth, payments): >= 80% or BLOCK
+- Normal code: >= 60% or WARN
+- Test edge cases that surviving mutants reveal
+
+If mutation score too low:
+1. Analyze surviving mutants
+2. Add missing edge case tests
+3. Return to RED phase
+4. Re-run mutation testing
 
 ### 4.2 Domain Skills During Implementation
 
@@ -304,24 +330,81 @@ tasks:
     iterations: 1
 ```
 
+## PHASE 4.5: INTEGRATION VALIDATION (NEW)
+
+**CRITICAL: Run integration-validator BEFORE merging branches**
+
+After all Phase 4 tasks complete, but BEFORE Phase 5:
+
+### 4.5.1 Launch Integration Validator Agent
+
+```
+Use Task tool to dispatch: integration-validator agent
+```
+
+The agent will:
+1. Create temporary merge branch
+2. Attempt to merge ALL auto/* branches (no-commit)
+3. Check for conflicts
+4. Run FULL verification on merged code
+5. If database detected: run schema-validator agent
+6. Report pass/fail with detailed issues
+
+### 4.5.2 Decision Gate
+
+```
+Integration Validator Result:
+├── ALL PASS → Proceed to Phase 5
+├── CONFLICTS → Resolve, re-run validator
+├── TEST FAILURES → Fix in task branches, re-run validator
+└── SCHEMA MISMATCH → Regenerate types, re-run validator
+```
+
+**DO NOT proceed to Phase 5 if integration validation fails!**
+
+### 4.5.3 Common Integration Issues
+
+1. **Merge conflicts:** Two tasks edited same file
+   - Resolution: Review both changes, combine manually
+
+2. **Type mismatches:** Task A added field, Task B doesn't know
+   - Resolution: Regenerate types, update imports
+
+3. **Schema drift:** Database changed, code types outdated
+   - Resolution: `npx supabase gen types typescript` or similar
+
+4. **Test interference:** Tests pass in isolation, fail together
+   - Resolution: Check for shared state, cleanup issues
+
+### CHECKPOINT 4.5: Verify Integration Validation Complete
+Before proceeding to Phase 5:
+- [ ] integration-validator agent ran successfully
+- [ ] All conflicts resolved
+- [ ] Full verification passed on merged code
+- [ ] Schema validated (if database detected)
+- [ ] TodoWrite shows Phase 4.5 completed
+
 ## PHASE 5: INTEGRATION
 
-After all tasks complete:
+After integration validation passes (Phase 4.5 guarantees safety):
 
 1. **Checkout base branch**
 2. **Merge each task branch** in dependency order:
    ```bash
    git merge --no-ff auto/task-1 -m "feat: Create User model"
    ```
-3. **Handle conflicts:**
+3. **Handle any remaining conflicts:**
+   - Should be minimal (already validated in Phase 4.5)
    - Simple conflicts: resolve automatically
    - Complex conflicts: ask user for guidance
-4. **Run full verification pipeline**
+4. **Run final verification pipeline** (should pass - already validated)
 5. **Clean up worktrees:**
    ```bash
    git worktree remove /tmp/auto-task-1
    git branch -d auto/task-1
    ```
+
+**Note:** Phase 5 is now safer because Phase 4.5 already validated the merge.
 
 ## PHASE 6: REVIEW
 
@@ -348,7 +431,15 @@ Follow the Gate Function:
 
 ### 6.2 Domain-Specific Verification
 
-Read `.claude/auto-context.yaml` and run additional verification:
+Read `.claude/auto-context.yaml` and `.claude/project-profile.yaml` for additional verification:
+
+**If database detected with MCP:**
+```
+Run schema-validator agent one final time
+```
+- Verify DB schema matches code types
+- Check RLS policies (Supabase)
+- Ensure no drift occurred during implementation
 
 **If work_type == FRONTEND:**
 ```

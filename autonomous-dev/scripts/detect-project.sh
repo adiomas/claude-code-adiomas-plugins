@@ -44,6 +44,12 @@ stack:
   language: ""
   framework: ""
 
+database:
+  provider: "none"
+  orm: "none"
+  mcp_available: false
+  schema_source: ""
+
 commands:
   test: ""
   lint: ""
@@ -170,6 +176,111 @@ if [[ -f "Cargo.toml" ]]; then
     yq -i '.commands.build = "cargo build"' "$PROFILE_FILE"
     yq -i '.commands.lint = "cargo clippy"' "$PROFILE_FILE"
 fi
+
+# ============================================
+# DATABASE PROVIDER DETECTION
+# ============================================
+
+DB_PROVIDER="none"
+DB_ORM="none"
+DB_SCHEMA_SOURCE=""
+
+if [[ -f "package.json" ]]; then
+    DEPS=$(cat package.json)
+
+    # Detect Supabase (PRIORITY)
+    if echo "$DEPS" | grep -q "@supabase/supabase-js\|@supabase/ssr"; then
+        DB_PROVIDER="supabase"
+        DB_SCHEMA_SOURCE="mcp"
+    # Detect Firebase
+    elif echo "$DEPS" | grep -q '"firebase"\|"firebase-admin"'; then
+        DB_PROVIDER="firebase"
+        DB_SCHEMA_SOURCE="manual"
+    # Detect PlanetScale
+    elif echo "$DEPS" | grep -q "@planetscale/database"; then
+        DB_PROVIDER="planetscale"
+    # Detect Neon
+    elif echo "$DEPS" | grep -q "@neondatabase/serverless"; then
+        DB_PROVIDER="neon"
+    # Detect MongoDB
+    elif echo "$DEPS" | grep -q '"mongodb"\|"mongoose"'; then
+        DB_PROVIDER="mongodb"
+        if echo "$DEPS" | grep -q '"mongoose"'; then
+            DB_ORM="mongoose"
+        fi
+        DB_SCHEMA_SOURCE="manual"
+    # Detect PostgreSQL direct
+    elif echo "$DEPS" | grep -q '"pg"\|"postgres"\|"@vercel/postgres"'; then
+        DB_PROVIDER="postgres"
+    # Detect MySQL
+    elif echo "$DEPS" | grep -q '"mysql2"\|"mysql"'; then
+        DB_PROVIDER="mysql"
+    # Detect SQLite
+    elif echo "$DEPS" | grep -q '"better-sqlite3"\|"sql.js"'; then
+        DB_PROVIDER="sqlite"
+    fi
+
+    # Detect ORM (can override provider detection)
+    if echo "$DEPS" | grep -q "@prisma/client"; then
+        DB_ORM="prisma"
+        DB_SCHEMA_SOURCE="prisma/schema.prisma"
+    elif echo "$DEPS" | grep -q "drizzle-orm"; then
+        DB_ORM="drizzle"
+        # Try to find drizzle schema
+        if [[ -f "drizzle.config.ts" ]]; then
+            DB_SCHEMA_SOURCE="drizzle/schema.ts"
+        elif [[ -f "src/db/schema.ts" ]]; then
+            DB_SCHEMA_SOURCE="src/db/schema.ts"
+        fi
+    elif echo "$DEPS" | grep -q '"typeorm"'; then
+        DB_ORM="typeorm"
+    elif echo "$DEPS" | grep -q '"kysely"'; then
+        DB_ORM="kysely"
+    fi
+fi
+
+# Detect Prisma directory
+if [[ -d "prisma" ]] && [[ -f "prisma/schema.prisma" ]]; then
+    DB_ORM="prisma"
+    DB_SCHEMA_SOURCE="prisma/schema.prisma"
+    # If no provider detected, check prisma schema for datasource
+    if [[ "$DB_PROVIDER" == "none" ]]; then
+        if grep -q 'provider.*=.*"postgresql"' prisma/schema.prisma 2>/dev/null; then
+            DB_PROVIDER="postgres"
+        elif grep -q 'provider.*=.*"mysql"' prisma/schema.prisma 2>/dev/null; then
+            DB_PROVIDER="mysql"
+        elif grep -q 'provider.*=.*"sqlite"' prisma/schema.prisma 2>/dev/null; then
+            DB_PROVIDER="sqlite"
+        fi
+    fi
+fi
+
+# Detect Drizzle config
+if [[ -f "drizzle.config.ts" ]] || [[ -f "drizzle.config.js" ]]; then
+    DB_ORM="drizzle"
+fi
+
+# Check for Supabase config directory
+if [[ -d "supabase" ]] && [[ -f "supabase/config.toml" ]]; then
+    DB_PROVIDER="supabase"
+    DB_SCHEMA_SOURCE="mcp"
+fi
+
+# Write database config
+yq -i ".database.provider = \"$DB_PROVIDER\"" "$PROFILE_FILE"
+yq -i ".database.orm = \"$DB_ORM\"" "$PROFILE_FILE"
+[[ -n "$DB_SCHEMA_SOURCE" ]] && yq -i ".database.schema_source = \"$DB_SCHEMA_SOURCE\"" "$PROFILE_FILE"
+
+# MCP availability check (Supabase is the priority)
+if [[ "$DB_PROVIDER" == "supabase" ]]; then
+    yq -i '.database.mcp_available = true' "$PROFILE_FILE"
+else
+    yq -i '.database.mcp_available = false' "$PROFILE_FILE"
+fi
+
+# ============================================
+# END DATABASE DETECTION
+# ============================================
 
 # Build verification lists
 REQUIRED=()

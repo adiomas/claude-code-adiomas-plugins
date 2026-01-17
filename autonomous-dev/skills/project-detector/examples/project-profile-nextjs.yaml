@@ -1,5 +1,5 @@
-# Example: Next.js Project Profile
-# This is what a detected Next.js project profile looks like
+# Example: Next.js Project Profile with Supabase
+# This is what a detected Next.js + Supabase project profile looks like
 
 project:
   name: "my-nextjs-app"
@@ -9,6 +9,12 @@ stack:
   language: "typescript/javascript"
   framework: "next.js"
   package_manager: "pnpm"
+
+database:
+  provider: "supabase"
+  orm: "none"
+  mcp_available: true
+  schema_source: "mcp"
 
 commands:
   test: "pnpm test"

@@ -33,6 +33,11 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post-tool.sh",
             "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/continuous-rebase.sh",
+            "timeout": 120
           }
         ]
       }

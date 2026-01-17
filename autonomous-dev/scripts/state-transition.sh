@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# STATE TRANSITION ENGINE v3.0
+# STATE TRANSITION ENGINE v3.1
 # =============================================================================
 # Manages state machine transitions for autonomous-dev plugin.
 # Provides automated skill invocation and checkpoint management.
@@ -105,7 +105,7 @@ init_state_machine() {
 # Autonomous-Dev State Machine v3.0
 # Auto-generated - tracks execution state for resume capability
 
-version: "3.0"
+version: "3.1"
 current_state: "$initial_state"
 previous_state: ""
 work_type: ""
@@ -371,7 +371,7 @@ case "${1:-help}" in
         ;;
     "help"|*)
         cat << 'EOF'
-State Transition Engine v3.0
+State Transition Engine v3.1
 
 Usage:
   state-transition.sh init [initial_state]     Initialize state machine

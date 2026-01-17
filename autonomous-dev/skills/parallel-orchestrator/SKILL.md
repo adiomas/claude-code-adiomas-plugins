@@ -11,6 +11,66 @@ description: >
 
 Coordinate multiple parallel agents working on independent tasks using git worktrees for isolation.
 
+## Auto-Invoke Trigger (NEW)
+
+This skill is automatically invoked when:
+1. `task-decomposer` found >= 3 independent tasks
+2. State machine transitioned to `PARALLELIZE`
+3. `parallelization.enabled == true` in config (default)
+
+**Skip conditions:**
+- All tasks have linear dependencies
+- `independent_tasks < 3`
+- `parallelization.enabled == false` in `.claude/auto-context.yaml`
+
+## Pre-Flight Check
+
+Before creating worktrees, verify:
+
+```bash
+# Check parallelization config
+if [[ -f ".claude/auto-context.yaml" ]]; then
+  enabled=$(yq -r '.parallelization.enabled // true' .claude/auto-context.yaml)
+  min_tasks=$(yq -r '.parallelization.min_tasks // 3' .claude/auto-context.yaml)
+  max_agents=$(yq -r '.parallelization.max_agents // 5' .claude/auto-context.yaml)
+fi
+```
+
+## Execution Mode Output (REQUIRED)
+
+Always output the execution decision:
+
+**For PARALLEL execution:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ⚡ Execution Mode: PARALLEL                                 │
+│    Tasks: 5 independent files detected                      │
+│    Agents: 3 (limited by max_agents config)                 │
+│                                                             │
+│    Parallel Group 1:                                        │
+│      ├── Agent 1: [worktree-1] globals.css, tailwind.config │
+│      ├── Agent 2: [worktree-2] sidebar.tsx                  │
+│      └── Agent 3: [worktree-3] header.tsx                   │
+│                                                             │
+│    Parallel Group 2 (after Group 1):                        │
+│      ├── Agent 4: [worktree-4] stat-bar.tsx                 │
+│      └── Agent 5: [worktree-5] onboarding.tsx               │
+│                                                             │
+│    Progress: [░░░░░░░░░░░░░░░░] 0/5 agents complete         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**For SEQUENTIAL execution:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ⏸️ Execution Mode: SEQUENTIAL                               │
+│    Reason: Only 2 files with dependencies                   │
+│    Order: types.ts → component.tsx                          │
+│                                                             │
+│    Skipping parallel orchestration (threshold not met)      │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ## Worktree Strategy
 
 Each independent task receives its own git worktree:
@@ -111,3 +171,43 @@ For detailed worktree management:
 |--------|---------|
 | `scripts/setup-worktree.sh` | Create isolated worktree |
 | `scripts/merge-branches.sh` | Merge all auto/* branches |
+| `scripts/state-transition.sh` | Manage state machine |
+
+## Progress Tracking (REQUIRED)
+
+Update progress display after each agent completion:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ⚡ Execution Mode: PARALLEL                                 │
+│    Progress: [████████░░░░░░░░] 3/5 agents complete         │
+│                                                             │
+│    ✅ Agent 1: globals.css, tailwind.config (done)          │
+│    ✅ Agent 2: sidebar.tsx (done)                           │
+│    ✅ Agent 3: header.tsx (done)                            │
+│    ⏳ Agent 4: stat-bar.tsx (in progress)                   │
+│    ⏳ Agent 5: onboarding.tsx (in progress)                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Integration with State Machine
+
+After parallel execution completes:
+
+```bash
+# Transition to INTEGRATE state for merging
+${CLAUDE_PLUGIN_ROOT}/scripts/state-transition.sh transition INTEGRATE
+```
+
+## Configuration Reference
+
+In `.claude/auto-context.yaml`:
+
+```yaml
+parallelization:
+  enabled: true           # Master switch
+  min_tasks: 3            # Minimum independent tasks to trigger
+  max_agents: 5           # Maximum concurrent agents
+  auto_cleanup: true      # Remove worktrees after merge
+  retry_on_failure: 3     # Retry failed agents N times
+```

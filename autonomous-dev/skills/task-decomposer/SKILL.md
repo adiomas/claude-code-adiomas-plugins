@@ -82,6 +82,95 @@ Write decomposed tasks to the execution plan at `.claude/plans/auto-{timestamp}.
 
 Prefer breaking L tasks into smaller S/M tasks when possible.
 
+## Auto-Detection Patterns (NEW)
+
+Use these patterns to automatically identify parallelizable tasks:
+
+### Independent Task Detection
+
+| Pattern | Example Files | Parallelizable? | Reason |
+|---------|---------------|-----------------|--------|
+| Different components, same type | sidebar.tsx, header.tsx, footer.tsx | ✅ YES | No imports between them |
+| CSS/config files | globals.css, tailwind.config.ts | ✅ YES | Config files are independent |
+| Multiple API endpoints | api/users.ts, api/posts.ts, api/comments.ts | ✅ YES | Separate route handlers |
+| Multiple data models | models/User.ts, models/Post.ts | ✅ YES | Independent type definitions |
+| Utility functions | utils/format.ts, utils/validate.ts | ✅ YES | Pure functions, no state |
+
+### Dependent Task Detection
+
+| Pattern | Example Files | Parallelizable? | Reason |
+|---------|---------------|-----------------|--------|
+| Component + its test | Button.tsx, Button.test.tsx | ❌ NO | Test imports component |
+| API + UI consuming it | api/users.ts, UserList.tsx | ❌ NO | UI imports API |
+| Type + consumer | types/user.ts, UserCard.tsx | ❌ NO | Component imports type |
+| Base + derived | BaseComponent.tsx, ChildComponent.tsx | ❌ NO | Child extends base |
+| Schema + migration | schema.prisma, migration.sql | ❌ NO | Migration uses schema |
+
+### Dependency Detection Rules
+
+1. **Import Analysis**
+   ```
+   IF File A contains "import ... from './FileB'"
+   THEN A depends on B → SEQUENTIAL
+
+   IF no imports between files
+   THEN INDEPENDENT → PARALLEL
+   ```
+
+2. **Type Dependencies**
+   ```
+   IF Component uses type from types/foo.ts
+   THEN types/foo.ts must be created FIRST
+   THEN component can run in parallel with OTHER components using same type
+   ```
+
+3. **State Dependencies**
+   ```
+   IF Component A modifies global state that B reads
+   THEN A must complete before B → SEQUENTIAL
+
+   IF Components use independent local state
+   THEN INDEPENDENT → PARALLEL
+   ```
+
+4. **Layer Dependencies (Common Pattern)**
+   ```
+   Layer 1: Types/Models     → INDEPENDENT (parallelize)
+   Layer 2: API/Services     → Depends on Layer 1
+   Layer 3: UI Components    → Depends on Layer 2 (or parallel with mocks)
+   Layer 4: Integration Tests → Depends on all
+   ```
+
+### Quick Decision Flowchart
+
+```
+For each pair of files (A, B):
+     │
+     ▼
+Does A import B or B import A?
+     │
+     ├── YES → SEQUENTIAL (create dependency edge)
+     │
+     └── NO → Do they share mutable state?
+                   │
+                   ├── YES → SEQUENTIAL
+                   │
+                   └── NO → PARALLEL ✓
+```
+
+## Parallelization Threshold
+
+**Automatic parallelization triggers when:**
+- `independent_tasks >= 3` (configurable in auto-context.yaml)
+- No circular dependencies exist
+- Tasks are in same architectural layer
+
+**Skip parallelization when:**
+- `independent_tasks < 3` (overhead not worth it)
+- All tasks have linear dependencies
+- Single-file changes
+- Trivial fixes (typos, renames)
+
 ## Additional Resources
 
 ### Reference Files

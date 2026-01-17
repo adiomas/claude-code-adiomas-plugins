@@ -18,10 +18,11 @@ Before starting, create todo list:
 1. Phase 1: Project Detection + Work Type Classification + Database Detection
 2. Phase 2: Requirement Understanding (brainstorming)
 3. Phase 3: Planning (writing-plans)
-4. Phase 4: Execution (TDD + Mutation Testing)
-5. Phase 4.5: Integration Validation (NEW - pre-merge testing)
-6. Phase 5: Integration (merge branches)
-7. Phase 6: Review and Verification
+4. Phase 3.5: Parallelization Decision (NEW - auto-detect parallel vs sequential)
+5. Phase 4: Execution (TDD + Mutation Testing)
+6. Phase 4.5: Integration Validation (pre-merge testing)
+7. Phase 5: Integration (merge branches)
+8. Phase 6: Review and Verification
 
 Mark each phase in_progress when starting, completed when done.
 
@@ -216,6 +217,102 @@ If plan is NOT at `.claude/plans/auto-*.md`:
 **Common mistake:** Saving plan to `docs/plans/` instead of `.claude/plans/`
 - `docs/plans/` is for DESIGN DOCUMENTS (from brainstorming)
 - `.claude/plans/auto-*.md` is for EXECUTION PLANS (from writing-plans)
+
+## PHASE 3.5: PARALLELIZATION DECISION (NEW)
+
+**CRITICAL: Evaluate whether to use parallel or sequential execution**
+
+Before writing any code, analyze the plan to decide execution mode:
+
+### 3.5.1 Count Output Files
+
+From the execution plan, count distinct output files:
+```
+files_in_plan = [list all files from all tasks]
+independent_count = [count files with no dependencies]
+```
+
+### 3.5.2 Analyze Dependencies
+
+For each file, determine if it depends on other files:
+
+| Pattern | Example | Independent? |
+|---------|---------|--------------|
+| Different components, same type | sidebar.tsx, header.tsx | ✅ YES |
+| CSS/config files | globals.css, tailwind.config | ✅ YES |
+| Component + its test | Button.tsx, Button.test.tsx | ❌ NO |
+| API + UI using it | api/users.ts, UserList.tsx | ❌ NO |
+| Multiple API endpoints | api/users.ts, api/posts.ts | ✅ YES |
+| Shared types | types/user.ts (used by many) | ⚠️ FIRST |
+
+**Import Analysis Rule:**
+- File A imports File B → A depends on B → SEQUENTIAL
+- No imports between files → INDEPENDENT → PARALLEL
+
+### 3.5.3 Decision Gate
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Independent files >= 3?                                    │
+│     │                                                       │
+│     ├── YES ──▶ PARALLEL EXECUTION                          │
+│     │          1. Transition to PARALLELIZE state           │
+│     │          2. Invoke task-decomposer skill              │
+│     │          3. Create execution strategy with groups     │
+│     │          4. Create worktrees for each group           │
+│     │          5. Dispatch Task(run_in_background: true)    │
+│     │                                                       │
+│     └── NO ───▶ SEQUENTIAL EXECUTION                        │
+│                (current behavior - OK for small tasks)      │
+│                Skip to Phase 4 directly                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 3.5.4 Output Decision
+
+Always output the parallelization decision:
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ⚡ Parallelization: ENABLED                                 │
+│    Reason: 5 independent files detected                     │
+│    Strategy: 2 parallel groups                              │
+│                                                             │
+│    Group 1 (parallel):                                      │
+│      ├── Agent 1: globals.css + tailwind.config.ts          │
+│      └── Agent 2: sidebar.tsx                               │
+│                                                             │
+│    Group 2 (parallel, after Group 1):                       │
+│      ├── Agent 3: stat-bar.tsx                              │
+│      └── Agent 4: onboarding.tsx                            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Or for sequential:
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ⏸️ Parallelization: DISABLED                                │
+│    Reason: Only 2 files, all have dependencies              │
+│    Strategy: Sequential execution in main session           │
+│    Order: types.ts → component.tsx                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 3.5.5 State Transition
+
+If parallel execution chosen:
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/state-transition.sh transition PARALLELIZE
+```
+
+This invokes mandatory skills: `task-decomposer`, `parallel-orchestrator`
+
+### CHECKPOINT 3.5: Verify Parallelization Decision
+Before proceeding to Phase 4:
+- [ ] Parallelization decision made and output
+- [ ] If parallel: PARALLELIZE state active
+- [ ] If parallel: Execution strategy with groups created
+- [ ] If sequential: Proceed directly to Phase 4
+- [ ] TodoWrite shows Phase 3.5 completed
 
 ## PHASE 4: EXECUTION
 

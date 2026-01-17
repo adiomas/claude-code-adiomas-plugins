@@ -15,7 +15,7 @@ MEMORY_DIR=".claude/auto-memory"
 # STATE DEFINITIONS
 # =============================================================================
 
-VALID_STATES=("IDLE" "DETECT" "CLASSIFY" "PLAN" "EXECUTE" "INTEGRATE" "REVIEW" "COMPLETE" "RESEARCH")
+VALID_STATES=("IDLE" "DETECT" "CLASSIFY" "PLAN" "PARALLELIZE" "EXECUTE" "INTEGRATE" "REVIEW" "COMPLETE" "RESEARCH")
 VALID_WORK_TYPES=("FRONTEND" "BACKEND" "FULLSTACK" "DOCUMENTATION" "DOCUMENTS" "INTEGRATION" "TESTING" "CREATIVE" "RESEARCH")
 
 # =============================================================================
@@ -51,6 +51,10 @@ get_mandatory_skills() {
                     echo "superpowers:brainstorming,superpowers:writing-plans"
                     ;;
             esac
+            ;;
+        "PARALLELIZE")
+            # NEW: Parallelization decision phase
+            echo "task-decomposer,parallel-orchestrator"
             ;;
         "EXECUTE")
             case "$work_type" in
@@ -380,7 +384,7 @@ Usage:
   state-transition.sh skills [state] [type]    Get mandatory skills
 
 Valid States:
-  IDLE, DETECT, CLASSIFY, PLAN, EXECUTE, INTEGRATE, REVIEW, COMPLETE, RESEARCH
+  IDLE, DETECT, CLASSIFY, PLAN, PARALLELIZE, EXECUTE, INTEGRATE, REVIEW, COMPLETE, RESEARCH
 
 Valid Work Types:
   FRONTEND, BACKEND, FULLSTACK, DOCUMENTATION, DOCUMENTS, INTEGRATION, TESTING, CREATIVE, RESEARCH

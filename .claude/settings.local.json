@@ -8,7 +8,15 @@
       "Bash(git -C /Users/qguest/Developer/claude-code-adiomas-plugins log --oneline -10)",
       "Bash(git -C /Users/qguest/Developer/claude-code-adiomas-plugins remote -v)",
       "Bash(xargs:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(wc:*)",
+      "Bash(ls:*)",
+      "WebFetch(domain:ghuntley.com)",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "mcp__plugin_context7_context7__query-docs",
+      "Skill(superpowers:brainstorming)",
+      "WebFetch(domain:www.anthropic.com)"
     ]
   }
 }

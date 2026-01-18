@@ -7,7 +7,7 @@ allowed-tools: []
 
 # Autonomous Dev Plugin Version
 
-**Version: 3.1.1**
+**Version: 3.2.0**
 
 Plugin: autonomous-dev
 Marketplace: adiomas-plugins

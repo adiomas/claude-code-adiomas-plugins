@@ -119,6 +119,88 @@ EOF
 }
 
 # =============================================================================
+# PARALLEL GROUP CHECKPOINTING (Anthropic Best Practice)
+# =============================================================================
+
+create_parallel_group_checkpoint() {
+    local group_num="$1"
+    local status="$2"  # pre|post|failed
+    local summary="$3"
+    local file="$MEMORY_DIR/parallel-group-${group_num}-${status}.yaml"
+
+    mkdir -p "$MEMORY_DIR"
+
+    # Get task info from progress file
+    local tasks_in_group completed_tasks
+    tasks_in_group=$(yq -r ".parallel_groups.group_${group_num}.tasks // []" "$PROGRESS_FILE" 2>/dev/null | tr '\n' ' ' || echo "unknown")
+
+    if [[ "$status" == "post" ]]; then
+        completed_tasks=$(yq -r ".tasks | to_entries | map(select(.value.status == \"done\" and .value.group == ${group_num})) | .[].key" "$PROGRESS_FILE" 2>/dev/null | tr '\n' ', ' || echo "")
+    else
+        completed_tasks=""
+    fi
+
+    cat > "$file" << EOF
+# Parallel Group $group_num Checkpoint
+# Status: $status
+# Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+group_number: $group_num
+checkpoint_type: $status
+timestamp: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+summary: |
+  $summary
+
+tasks_in_group: [$tasks_in_group]
+completed_tasks: [$completed_tasks]
+
+session_info:
+  session_id: $(yq -r '.session_id // "unknown"' "$STATE_MACHINE_FILE" 2>/dev/null || echo "unknown")
+  current_state: $(yq -r '.current_state // "unknown"' "$STATE_MACHINE_FILE" 2>/dev/null || echo "unknown")
+
+next_actions:
+  - Read this checkpoint on resume
+  - Continue with remaining tasks in this group (if pre/failed)
+  - Proceed to next group (if post)
+EOF
+
+    echo "Parallel group checkpoint created: $file"
+}
+
+write_group_checkpoint() {
+    local group_num="$1"
+    local status="$2"  # pre|post|failed
+    local summary="${3:-}"
+
+    case "$status" in
+        pre)
+            create_parallel_group_checkpoint "$group_num" "pre" "Starting execution of parallel group $group_num. $summary"
+            ;;
+        post)
+            create_parallel_group_checkpoint "$group_num" "post" "Completed parallel group $group_num. All tasks verified. $summary"
+            ;;
+        failed)
+            create_parallel_group_checkpoint "$group_num" "failed" "Parallel group $group_num failed. $summary"
+            ;;
+        *)
+            echo "Unknown status: $status. Use pre|post|failed" >&2
+            return 1
+            ;;
+    esac
+
+    # Update state machine
+    if [[ -f "$STATE_MACHINE_FILE" ]]; then
+        yq -i ".last_parallel_group = $group_num" "$STATE_MACHINE_FILE"
+        yq -i ".last_group_status = \"$status\"" "$STATE_MACHINE_FILE"
+        yq -i ".last_checkpoint = \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"" "$STATE_MACHINE_FILE"
+    fi
+
+    # Always update context summary after group checkpoint
+    create_context_summary
+}
+
+# =============================================================================
 # CHECKPOINT OPERATIONS
 # =============================================================================
 
@@ -232,6 +314,13 @@ case "${1:-help}" in
         fi
         write_checkpoint "$2" "$3"
         ;;
+    "group")
+        if [[ -z "${2:-}" || -z "${3:-}" ]]; then
+            echo "Usage: $0 group <group_num> <pre|post|failed> [summary]" >&2
+            exit 1
+        fi
+        write_group_checkpoint "$2" "$3" "${4:-}"
+        ;;
     "read")
         read_checkpoint
         ;;
@@ -256,18 +345,25 @@ case "${1:-help}" in
 Checkpoint Manager v3.0
 
 Usage:
-  checkpoint-manager.sh write <phase> <summary>    Write phase checkpoint
-  checkpoint-manager.sh read                       Read all checkpoints for resume
-  checkpoint-manager.sh task <id> <learning>       Record task learnings
-  checkpoint-manager.sh context                    Create context summary
-  checkpoint-manager.sh handoff                    Prepare for session handoff
-  checkpoint-manager.sh cleanup                    Archive memory files
+  checkpoint-manager.sh write <phase> <summary>        Write phase checkpoint
+  checkpoint-manager.sh group <num> <status> [summary] Write parallel group checkpoint (Anthropic Best Practice)
+  checkpoint-manager.sh read                           Read all checkpoints for resume
+  checkpoint-manager.sh task <id> <learning>           Record task learnings
+  checkpoint-manager.sh context                        Create context summary
+  checkpoint-manager.sh handoff                        Prepare for session handoff
+  checkpoint-manager.sh cleanup                        Archive memory files
+
+Parallel Group Checkpointing (NEW):
+  group <num> pre     Before starting parallel group execution
+  group <num> post    After parallel group completes successfully
+  group <num> failed  When parallel group fails
 
 Memory Files Created:
-  .claude/auto-memory/phase-*-summary.md     Phase summaries
-  .claude/auto-memory/task-*-learnings.md    Task learnings
-  .claude/auto-memory/context-summary.md     Full context for resume
-  .claude/auto-memory/next-actions.md        Handoff instructions
+  .claude/auto-memory/phase-*-summary.md             Phase summaries
+  .claude/auto-memory/task-*-learnings.md            Task learnings
+  .claude/auto-memory/context-summary.md             Full context for resume
+  .claude/auto-memory/next-actions.md                Handoff instructions
+  .claude/auto-memory/parallel-group-*-*.yaml        Parallel group checkpoints (NEW)
 EOF
         ;;
 esac

@@ -219,6 +219,66 @@ npx prisma generate
 2. If no schema file, warn but don't block
 3. Recommend setting up proper schema source
 
+## PII Protection Protocol (Anthropic Best Practice)
+
+**CRITICAL: Tokenize PII before including in output.**
+
+When validating schemas that contain user data:
+
+### Before Outputting Sample Data
+
+```bash
+# Tokenize any sample data before including in report
+${CLAUDE_PLUGIN_ROOT}/scripts/pii-filter.sh tokenize "$SAMPLE_DATA"
+```
+
+### PII Detection
+
+Scan for these patterns in schema/data:
+
+| Column Name Pattern | PII Type | Action |
+|---------------------|----------|--------|
+| `email`, `*_email` | Email | Tokenize |
+| `phone`, `*_phone` | Phone | Tokenize |
+| `oib`, `ssn`, `*_id` | National ID | Tokenize |
+| `card_*`, `*_number` | Financial | Tokenize |
+| `ip_*`, `*_address` | IP Address | Tokenize |
+
+### In Validation Output
+
+Instead of:
+```
+Sample user: john.doe@example.com, 091-123-4567
+```
+
+Use:
+```
+Sample user: [EMAIL_1], [PHONE_1]
+```
+
+### Implementation
+
+```typescript
+import { PIITokenizer } from '../scripts/pii-tokenizer';
+
+// Before including any user data in output
+const tokenizer = new PIITokenizer();
+const safeOutput = tokenizer.tokenize(outputWithPII);
+```
+
+### When to Apply
+
+- [x] Sample data in error messages
+- [x] Row examples showing mismatches
+- [x] Test data from queries
+- [x] Any user-identifiable content
+
+### When NOT to Apply
+
+- [ ] Column names (not PII)
+- [ ] Type definitions
+- [ ] RLS policy SQL (no actual data)
+
 ## Integration with Workflow
 
 This agent is called:
@@ -230,3 +290,4 @@ When called from integration-validator:
 - Return structured result (not just markdown)
 - Include pass/fail status
 - List all critical issues
+- Apply PII tokenization to any user data

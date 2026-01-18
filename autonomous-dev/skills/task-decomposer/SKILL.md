@@ -59,6 +59,54 @@ Task N: [Descriptive Name]
 - Complexity: S/M/L
 ```
 
+### Step 4b: Feature List Pattern (REQUIRED)
+
+**CRITICAL: All tasks MUST start as failing and require evidence for completion.**
+
+In addition to the task list, generate a YAML feature list that tracks verification status:
+
+```yaml
+features:
+  - id: task-001
+    description: "Create UserForm component with validation"
+    status: failing  # MUST always start as failing
+    verification_command: "npm test -- --testPathPattern='UserForm'"
+    expected_output: "Tests: X passed, 0 failed"
+    evidence_required: true  # MUST be true
+    can_be_removed: false    # Prevents premature removal
+
+  - id: task-002
+    description: "Add API endpoint for user creation"
+    status: failing
+    verification_command: "npm test -- --testPathPattern='users.api'"
+    expected_output: "Tests: X passed, 0 failed"
+    evidence_required: true
+    can_be_removed: false
+```
+
+**Feature List Rules:**
+
+1. **status: failing** - ALL features MUST start with `status: failing`
+   - This ensures test-first development
+   - A task cannot be marked complete until verification proves it works
+
+2. **evidence_required: true** - ALL features MUST have this set
+   - No task can be marked complete without captured verification output
+   - Prevents "I think it works" completions
+
+3. **can_be_removed: false** - Prevents scope reduction
+   - Features cannot be removed from the list once added
+   - If a feature is genuinely not needed, it must be marked as `skipped` with reason
+
+4. **verification_command** - Executable command that proves the feature works
+   - Must be specific (not generic "npm test")
+   - Must target only relevant tests
+
+5. **expected_output** - Pattern to match in successful output
+   - Used to validate that verification actually passed
+
+Write the feature list to `.claude/plans/features-{timestamp}.yaml` alongside the task plan.
+
 ### Step 5: Identify Parallel Groups
 
 Group tasks by execution phase:

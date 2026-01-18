@@ -168,3 +168,92 @@ skill_chains:
     skip_parallel: true     # Disable parallelization
     force_parallel: true    # Force parallel even with < 3 tasks
 ```
+
+## Progressive Skill Loading (Anthropic Best Practice)
+
+**Load skills lazily, not eagerly, to reduce context consumption by 85%.**
+
+Instead of loading all skills upfront (~47K tokens), load only what's needed for the current phase (~7K tokens).
+
+### Lazy Loading References
+
+Replace eager loading with lazy references in chains:
+
+```
+BEFORE (Eager - loads all ~47K tokens):
+skill_chain:
+  - load: frontend-design       # ~1500 tokens
+  - load: task-decomposer       # ~800 tokens
+  - load: parallel-orchestrator # ~1200 tokens
+  - load: verification-runner   # ~600 tokens
+  - load: mutation-tester       # ~500 tokens
+  - load: conflict-resolver     # ~400 tokens
+  - load: e2e-validator         # ~700 tokens
+  ... (continues for all skills)
+
+AFTER (Lazy - loads ~7K tokens per phase):
+skill_chain:
+  - ref: frontend-design        # Invoked via Skill tool when needed
+  - ref: task-decomposer        # Loaded only in BRAINSTORM phase
+  - ref: parallel-orchestrator  # Loaded only in PARALLELIZE phase
+  - ref: verification-runner    # Loaded only in EXECUTE phase
+  ... (each loaded only when its phase begins)
+```
+
+### Configuration Reference
+
+See `skills/skill-loading-config.yaml` for:
+- `always_loaded`: Core skills loaded every session (~1K tokens)
+- `phase_specific`: Skills loaded per phase (~3K tokens max)
+- `on_demand`: Conditional skills (~1.5K tokens max)
+
+### Phase Transition Hook
+
+When phase changes, the hook outputs which skills to load:
+
+```bash
+# Called by state-transition.sh
+${CLAUDE_PLUGIN_ROOT}/hooks/phase-transition-hook.sh EXECUTE
+```
+
+Output:
+```
+Progressive Skill Loading - Phase: EXECUTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Always Loaded Skills:
+  ✓ project-detector
+  ✓ work-type-classifier
+
+Phase-Specific Skills for EXECUTE:
+  ✓ verification-runner
+  ✓ mutation-tester
+
+Estimated Token Usage:
+  Always loaded: ~1000 tokens
+  Phase-specific: ~1100 tokens
+  ─────────────────────
+  Total: ~2100 tokens (budget: 7000)
+```
+
+### Implementation in Agents
+
+Agents should follow progressive loading:
+
+```yaml
+# In agent prompts
+1. Read current phase from .claude/auto-state-machine.yaml
+2. Check skills/skill-loading-config.yaml for phase skills
+3. Load ONLY those skills (via Skill tool)
+4. Never pre-load skills for future phases
+```
+
+### Token Savings
+
+| Loading Strategy | Tokens | Savings |
+|-----------------|--------|---------|
+| Eager (all skills) | ~47,000 | 0% |
+| Progressive (per phase) | ~7,000 | 85% |
+| Minimal (core only) | ~2,000 | 96% |
+
+Progressive loading enables longer sessions with more context for actual work.

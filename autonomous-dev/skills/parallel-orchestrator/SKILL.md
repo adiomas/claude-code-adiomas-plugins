@@ -128,6 +128,68 @@ Failure handling protocol:
 - If still fails → mark task as failed
 - Report all failures to user at end
 
+### Step 6: QA Verification (Anthropic Best Practice)
+
+**Independent verification by QA agent before approving any task.**
+
+After task-executor signals READY_FOR_QA (not TASK_DONE):
+
+1. **Dispatch QA agent** for independent verification:
+   ```
+   Task(
+     subagent_type: "autonomous-dev:qa-agent",
+     prompt: "Verify task {id} in branch auto/task-{id}",
+     run_in_background: true
+   )
+   ```
+
+2. **Wait for QA decision:**
+   - `TASK_APPROVED` → Task verified, ready for integration
+   - `TASK_REJECTED` → Return to task-executor for fixes
+   - `QA_BLOCKED` → Investigate environment issue
+
+3. **Update progress based on QA result:**
+   ```yaml
+   tasks:
+     task-1:
+       status: qa_approved  # or qa_rejected
+       qa_verified: true
+       qa_timestamp: "2025-01-18T12:00:00Z"
+   ```
+
+4. **Only mark task complete after QA approval:**
+   - Task-executor: signals `READY_FOR_QA`
+   - QA-agent: signals `TASK_APPROVED`
+   - Orchestrator: updates status to `done`
+
+### QA Workflow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Task Executor                                               │
+│   │                                                         │
+│   ├── Implements feature (TDD cycle)                        │
+│   ├── Runs local verification                               │
+│   └── Signals: READY_FOR_QA (not TASK_DONE!)                │
+│                                                             │
+│ Parallel Orchestrator                                       │
+│   │                                                         │
+│   └── Dispatches QA Agent for independent verification      │
+│                                                             │
+│ QA Agent (fresh environment)                                │
+│   │                                                         │
+│   ├── npm ci (fresh install)                                │
+│   ├── Run all verification checks                           │
+│   ├── Test edge cases                                       │
+│   └── Decision: TASK_APPROVED or TASK_REJECTED              │
+│                                                             │
+│ Parallel Orchestrator                                       │
+│   │                                                         │
+│   ├── TASK_APPROVED → Mark done, proceed                    │
+│   └── TASK_REJECTED → Return to task-executor               │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ## Merge Protocol
 
 After all parallel tasks complete:
@@ -210,6 +272,164 @@ parallelization:
   max_agents: 5           # Maximum concurrent agents
   auto_cleanup: true      # Remove worktrees after merge
   retry_on_failure: 3     # Retry failed agents N times
+```
+
+## Session Boundary Protocol (REQUIRED)
+
+**Anthropic Best Practice: One parallel group per session to avoid context exhaustion**
+
+### Execution Strategy
+
+Execute exactly ONE parallel group per session:
+- Start session → Execute Group N → Checkpoint → End session
+- Next session → Read checkpoint → Execute Group N+1 → Checkpoint → End session
+- This prevents context overflow in long-running executions
+
+### Session Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Session Start                                               │
+│   │                                                         │
+│   ├── Read checkpoint (if resuming)                         │
+│   │   └── ${CLAUDE_PLUGIN_ROOT}/scripts/checkpoint-manager.sh read
+│   │                                                         │
+│   ├── Identify next parallel group                          │
+│   │                                                         │
+│   ├── Execute ONLY that group                               │
+│   │   ├── Create worktrees for group tasks                  │
+│   │   ├── Dispatch agents (run_in_background: true)         │
+│   │   ├── Wait for all agents to complete                   │
+│   │   └── Verify all tasks in group                         │
+│   │                                                         │
+│   ├── Write checkpoint                                      │
+│   │   └── ${CLAUDE_PLUGIN_ROOT}/scripts/checkpoint-manager.sh write GROUP_N "summary"
+│   │                                                         │
+│   └── End session (or signal for continuation)              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Auto-Checkpoint Trigger
+
+Checkpoints are written automatically when:
+
+1. **Parallel group completes** - All agents in the group finished
+2. **Token limit approaching** - When remaining context < 20%
+3. **Group transition** - Before starting the next group
+4. **Error recovery** - Before retrying failed tasks
+
+### Checkpoint Content
+
+Each checkpoint captures:
+```yaml
+# .claude/auto-memory/parallel-group-N-summary.md
+group_number: 2
+status: complete
+tasks_completed:
+  - task-3: "Created sidebar component"
+  - task-4: "Created header component"
+branches_created:
+  - auto/task-3
+  - auto/task-4
+verification_passed: true
+next_group: 3
+remaining_groups: [3, 4]
+```
+
+### Implementation
+
+Before dispatching parallel agents:
+
+```bash
+# Write pre-execution checkpoint
+${CLAUDE_PLUGIN_ROOT}/scripts/checkpoint-manager.sh write "PRE_GROUP_${GROUP_NUM}" \
+  "Starting parallel group $GROUP_NUM with tasks: $TASK_LIST"
+```
+
+After all agents complete:
+
+```bash
+# Write post-execution checkpoint
+${CLAUDE_PLUGIN_ROOT}/scripts/checkpoint-manager.sh write "POST_GROUP_${GROUP_NUM}" \
+  "Completed group $GROUP_NUM. Tasks verified. Ready for next group."
+
+# Prepare for next session if more groups exist
+if [[ $NEXT_GROUP -le $TOTAL_GROUPS ]]; then
+  ${CLAUDE_PLUGIN_ROOT}/scripts/checkpoint-manager.sh handoff
+  echo "Session complete. Run /auto-continue for next group."
+fi
+```
+
+### Session Limits
+
+| Metric | Limit | Action |
+|--------|-------|--------|
+| Agents per group | max_agents config (default 5) | Split into sub-groups |
+| Groups per session | 1 | Checkpoint and continue |
+| Context usage | < 80% | Continue, monitor |
+| Context usage | >= 80% | Force checkpoint |
+
+### Red Flags - STOP if:
+
+- "I'll just do one more group" → NO, one group per session
+- "Context is fine, continue" → Check actual usage first
+- "Skip checkpoint, it's almost done" → NEVER skip checkpoints
+
+## E2E Verification for FRONTEND (Anthropic Best Practice)
+
+When `work_type == FRONTEND`, add visual verification step:
+
+### E2E Step in Workflow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ FRONTEND Workflow                                           │
+│                                                             │
+│   1. Task Executor (TDD cycle)                              │
+│   2. QA Agent (independent verification)                    │
+│   3. E2E Validator (visual verification) ← NEW              │
+│   4. Integration (merge)                                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### When to Invoke E2E Validator
+
+| Condition | E2E Required |
+|-----------|--------------|
+| work_type == FRONTEND | ✅ Yes |
+| UI components changed | ✅ Yes |
+| CSS/styling changed | ✅ Yes |
+| work_type == BACKEND | ❌ No |
+| API-only changes | ❌ No |
+
+### E2E Integration
+
+After QA Agent approves, dispatch E2E validator:
+
+```
+Task(
+  subagent_type: "general-purpose",
+  prompt: "Run e2e-validator skill on the merged code.
+           Check: responsive layouts, interactive elements, visual regressions.
+           Base URL: http://localhost:3000",
+  run_in_background: false
+)
+```
+
+### E2E Output
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ E2E Validation: FRONTEND                                    │
+│                                                             │
+│   Viewports tested: mobile, tablet, desktop, wide           │
+│   Screenshots: .claude/screenshots/current/                 │
+│                                                             │
+│   Visual regressions: 0                                     │
+│   Interactive tests: 5/5 passed                             │
+│                                                             │
+│   Status: ✅ PASS                                           │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## When NOT to Use This Skill

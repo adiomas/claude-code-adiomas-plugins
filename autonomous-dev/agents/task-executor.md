@@ -171,6 +171,73 @@ If any check fails:
 - [ ] Tests pass (all relevant tests green)
 - [ ] Mutation score >= threshold (if applicable)
 
+### Phase 3b: Feature Completion Protocol (REQUIRED)
+
+**CRITICAL: Tasks cannot be marked complete without evidence.**
+
+Before marking any task as complete, you MUST:
+
+1. **Run the verification_command from the feature list:**
+   ```bash
+   # Get the verification command for this task
+   VERIFY_CMD=$(grep -A5 "id: ${TASK_ID}" .claude/plans/features-*.yaml | grep "verification_command:" | cut -d'"' -f2)
+
+   # Execute and capture output
+   $VERIFY_CMD 2>&1 | tee /tmp/verification-output.txt
+   ```
+
+2. **Compare output with expected_output:**
+   ```bash
+   EXPECTED=$(grep -A6 "id: ${TASK_ID}" .claude/plans/features-*.yaml | grep "expected_output:" | cut -d'"' -f2)
+
+   if grep -q "$EXPECTED" /tmp/verification-output.txt; then
+       echo "✓ Verification passed - output matches expected pattern"
+   else
+       echo "✗ Verification failed - output does not match expected pattern"
+       exit 1
+   fi
+   ```
+
+3. **Include actual output as evidence:**
+   When signaling task completion, include the captured verification output:
+   ```
+   <promise>TASK_DONE: {task-id}</promise>
+
+   ## Verification Evidence
+
+   **Command:** `{verification_command}`
+   **Expected:** `{expected_output}`
+   **Actual Output:**
+   ```
+   {captured output from verification}
+   ```
+   **Match:** ✓ YES
+   ```
+
+4. **Update feature status in feature list:**
+   Only after verification passes with evidence:
+   ```yaml
+   - id: task-001
+     status: passing  # Changed from failing ONLY after evidence
+     verification_evidence: |
+       Ran: npm test -- --testPathPattern='UserForm'
+       Output: Tests: 5 passed, 0 failed
+       Timestamp: 2025-01-18T10:30:00Z
+   ```
+
+**Feature Completion Rules:**
+
+- **NEVER** mark a task complete without running verification_command
+- **NEVER** change status from "failing" to "passing" without captured output
+- **NEVER** skip evidence capture - it must be in the completion signal
+- **ALWAYS** include timestamp of verification
+- **ALWAYS** compare output against expected_output pattern
+
+**Red Flags - STOP if you think:**
+- "I'm sure it works, I don't need to run verification" → RUN IT
+- "The test output is too long to include" → Include summary + key lines
+- "I'll just mark it as done" → NO, evidence required
+
 ### Phase 4: Commit
 
 Once verification passes:
@@ -185,12 +252,54 @@ git commit -m "feat: [task description]
 Task: [task-id]"
 ```
 
-### Phase 5: Signal Completion
+### Phase 5: Signal Ready for QA
 
-Output the completion signal:
+**Anthropic Best Practice: Signal READY_FOR_QA, not TASK_DONE directly.**
+
+After local verification passes, signal readiness for independent QA:
+
 ```
-<promise>TASK_DONE: {task-id}</promise>
+<promise>READY_FOR_QA: {task-id}</promise>
+
+## Local Verification Summary
+
+**Branch:** auto/task-{id}
+**Commit:** {commit-sha}
+
+### Checks Passed
+| Check | Status |
+|-------|--------|
+| Typecheck | ✅ PASS |
+| Lint | ✅ PASS |
+| Tests | ✅ {X} passed |
+| Mutation Score | ✅ {Y}% |
+
+Ready for independent QA verification.
 ```
+
+**Why READY_FOR_QA instead of TASK_DONE?**
+
+- Task-executor has confirmation bias (tested own code)
+- QA agent provides independent verification in fresh environment
+- TASK_DONE is only signaled by orchestrator after QA approval
+
+### Phase 5b: Handle QA Response
+
+After QA agent runs, you may receive:
+
+**If TASK_APPROVED:**
+- No action needed from task-executor
+- Orchestrator will mark task complete
+
+**If TASK_REJECTED:**
+1. Read QA rejection report
+2. Address each issue identified
+3. Return to Phase 2 (RED-GREEN-REFACTOR)
+4. Signal READY_FOR_QA again when fixed
+
+**If QA_BLOCKED:**
+- Investigate environment issue
+- May need to fix test setup or dependencies
 
 ## Quality Standards
 
@@ -235,9 +344,80 @@ If unable to complete after **3 debugging iterations**:
    [What user/orchestrator should do]
    ```
 
+## Output Filtering (REQUIRED)
+
+**Anthropic Best Practice: Filter verification output to reduce token usage by 40%+**
+
+### Token Budgets
+
+| Output Type | Max Tokens | Max Lines |
+|-------------|------------|-----------|
+| Success summary | ~50 | 5 lines |
+| Failure details | ~200 | 30 lines |
+| Stack traces | - | 5 lines max |
+
+### What to Filter OUT
+
+NEVER include in your output or context:
+- Full test suite listings (only failed tests)
+- Coverage reports (only pass/fail)
+- Dependency installation logs
+- Build progress indicators
+- Stack traces > 5 lines
+
+### How to Filter
+
+Use the filter script for all verification:
+
+```bash
+# Instead of:
+npm test
+
+# Use:
+${CLAUDE_PLUGIN_ROOT}/scripts/filter-verification-output.sh "npm test"
+```
+
+Or apply inline filtering:
+
+```bash
+# Limit to last 30 lines for failures
+npm test 2>&1 | tail -30
+
+# Extract summary only for success
+npm test 2>&1 | grep -E "(passed|failed|error)"
+```
+
+### In Completion Signals
+
+When including evidence in TASK_DONE signals, filter to essentials:
+
+**GOOD (filtered):**
+```
+Tests: 5 passed, 0 failed
+Time: 2.1s
+```
+
+**BAD (unfiltered):**
+```
+PASS src/components/Button.test.tsx
+  Button Component
+    ✓ renders correctly (15 ms)
+    ✓ handles click events (8 ms)
+    ✓ applies custom className (3 ms)
+    ✓ shows loading state (12 ms)
+    ✓ is disabled when disabled prop is true (4 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       5 passed, 5 total
+Snapshots:   0 total
+Time:        2.145 s
+Ran all test suites matching /Button/i.
+```
+
 ## Important Rules
 
 - **Focus on ONE task only** - don't scope creep
 - **Don't modify files outside task scope**
 - **Commit only when verification passes**
 - **Always output completion/failure signal**
+- **Always filter verification output**

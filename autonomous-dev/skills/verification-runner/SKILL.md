@@ -70,6 +70,89 @@ Verification Results:
   Build: success
 ```
 
+## Result Filtering Protocol (REQUIRED)
+
+**Anthropic Best Practice: Result filtering reduces token usage by 40%+**
+
+### When to Filter Output
+
+ALWAYS filter verification output to minimize context consumption:
+
+| Scenario | Action | Token Budget |
+|----------|--------|--------------|
+| All checks pass | Summary only | ~50 tokens |
+| Check fails | Error lines only | ~200 tokens |
+| Multiple failures | First failure + count | ~300 tokens |
+
+### What to NEVER Include
+
+These outputs waste tokens and should NEVER be in the model context:
+
+- ❌ **Stack traces > 10 lines** - Include first 5 lines only
+- ❌ **Coverage reports** - Just include pass/fail summary
+- ❌ **Timing breakdowns** - Total time only
+- ❌ **Verbose logs** - Error messages only
+- ❌ **Full test lists** - Failed tests only
+- ❌ **Dependency installation logs** - Skip entirely
+- ❌ **Progress indicators** - Skip dots, spinners, bars
+
+### Success Output Format (~50 tokens)
+
+```
+✓ VERIFICATION PASSED
+─────────────────────
+Tests: 42 passed, 0 failed
+Time: 3.2s
+─────────────────────
+Exit code: 0
+```
+
+### Failure Output Format (~200 tokens)
+
+```
+✗ VERIFICATION FAILED
+─────────────────────
+src/components/Button.tsx:15:3
+  error TS2322: Type 'string' is not assignable to type 'number'
+
+src/utils/format.ts:8:1
+  error TS7006: Parameter 'x' implicitly has an 'any' type
+
+─────────────────────
+Summary: Found 2 errors
+Exit code: 1
+```
+
+### Using the Filter Script
+
+Use the filter script for all verification commands:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/filter-verification-output.sh "npm test"
+${CLAUDE_PLUGIN_ROOT}/scripts/filter-verification-output.sh "npm run typecheck"
+```
+
+The script automatically:
+- Captures full output
+- Extracts summary for success
+- Extracts error lines for failure
+- Limits output to token budgets
+
+### Implementation in Agents
+
+When running verification in agents:
+
+```bash
+# Instead of:
+npm test
+
+# Use:
+./scripts/filter-verification-output.sh "npm test"
+
+# Or inline filtering:
+npm test 2>&1 | head -30  # Limit to 30 lines max
+```
+
 ## Smart Test Optimization
 
 For Jest/Vitest projects with `--changedSince` support:

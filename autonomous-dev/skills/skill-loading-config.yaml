@@ -1,0 +1,95 @@
+# Skill Loading Configuration
+# Anthropic Best Practice: Progressive loading reduces initial context from ~47K to ~7K tokens
+#
+# This configuration defines which skills are loaded at each phase of execution.
+# Only load skills when they're actually needed to minimize context consumption.
+
+# Skills that are ALWAYS loaded (core infrastructure)
+# These are small and essential for any autonomous operation
+always_loaded:
+  - project-detector      # ~500 tokens - needed to understand project
+  - work-type-classifier  # ~400 tokens - needed to determine workflow
+
+# Skills loaded based on current execution phase
+# Load these ONLY when entering the corresponding phase
+phase_specific:
+  BRAINSTORM:
+    skills:
+      - task-decomposer     # ~800 tokens - break down requirements
+    # superpowers:brainstorming is invoked via Skill tool, not pre-loaded
+
+  PLAN:
+    skills:
+      - task-decomposer     # Already loaded from BRAINSTORM, but ensure available
+    # superpowers:writing-plans is invoked via Skill tool
+
+  PARALLELIZE:
+    skills:
+      - parallel-orchestrator  # ~1200 tokens - worktree management
+      - task-decomposer        # Re-use from PLAN phase
+
+  EXECUTE:
+    skills:
+      - verification-runner    # ~600 tokens - run tests/lint/build
+      - mutation-tester        # ~500 tokens - verify test quality
+    # task-executor is an agent, not a skill
+
+  INTEGRATE:
+    skills:
+      - conflict-resolver      # ~400 tokens - handle merge conflicts
+      - verification-runner    # Re-run verification post-merge
+
+  REVIEW:
+    skills:
+      - verification-runner    # Final verification
+    # code-reviewer is an agent, not a skill
+
+# Skills loaded only when specific conditions are met
+on_demand:
+  # Load only if project uses specific database
+  database_detected:
+    condition: ".claude/project-profile.yaml contains 'database:'"
+    skills: []  # schema-validator is an agent
+
+  # Load only if frontend work detected
+  frontend_work:
+    condition: ".claude/auto-context.yaml work_type == FRONTEND"
+    skills:
+      - e2e-validator  # ~700 tokens - browser automation
+
+  # Load only if MCP available
+  mcp_available:
+    condition: "MCP tools are available in session"
+    skills: []  # MCP tools are used directly, not via skills
+
+# Token budgets (approximate)
+# Used to decide when to unload skills
+token_budgets:
+  always_loaded_total: 1000      # ~1K tokens for core skills
+  phase_specific_max: 3000       # Max ~3K tokens per phase
+  on_demand_max: 1500            # Max ~1.5K tokens for conditional skills
+  total_skill_budget: 7000       # Total ~7K tokens (vs 47K if all loaded)
+
+# Unloading strategy
+# Skills can be conceptually "unloaded" by not referencing them in prompts
+unloading:
+  # After BRAINSTORM, task-decomposer patterns are in the plan file
+  after_brainstorm:
+    - task-decomposer  # Plan is written, skill no longer needed in context
+
+  # After EXECUTE, testing skills served their purpose
+  after_execute:
+    - mutation-tester  # Tests are written, mutation testing done
+
+  # After INTEGRATE, conflict resolution done
+  after_integrate:
+    - conflict-resolver  # Branches merged, no more conflicts
+
+# Loading protocol for agents
+# Agents should follow this when loading skills
+loading_protocol:
+  1_check_phase: "Read current phase from .claude/auto-state-machine.yaml"
+  2_load_always: "Always load skills in always_loaded list"
+  3_load_phase: "Load skills for current phase from phase_specific"
+  4_check_conditions: "Evaluate on_demand conditions, load if true"
+  5_respect_budget: "Ensure total loaded tokens < total_skill_budget"

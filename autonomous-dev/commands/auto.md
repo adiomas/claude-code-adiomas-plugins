@@ -579,6 +579,58 @@ Invoke: superpowers:receiving-code-review skill
    B) Make adjustments (describe what)
    C) Show more details about specific changes"
 
+## SESSION BOUNDARIES (Anthropic Best Practice)
+
+**Execute ONE parallel group per session to avoid context exhaustion.**
+
+### Session Flow
+
+```
+Session 1: Phase 1-3 + Parallel Group 1 → Checkpoint
+Session 2: Resume → Parallel Group 2 → Checkpoint
+Session 3: Resume → Parallel Group 3 → Checkpoint
+Session 4: Resume → Integration + Review → Complete
+```
+
+### Checkpoint Triggers
+
+Write checkpoints automatically when:
+1. **Parallel group completes** - Use `checkpoint-manager.sh group N post`
+2. **Context usage > 80%** - Force checkpoint and handoff
+3. **Before group transition** - Write pre-checkpoint before next group
+
+### Implementation
+
+Before each parallel group:
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/checkpoint-manager.sh group 1 pre "Starting group 1: tasks 1,2,3"
+```
+
+After parallel group completes:
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/checkpoint-manager.sh group 1 post "Group 1 complete. All verified."
+```
+
+If more groups remain:
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/checkpoint-manager.sh handoff
+echo "Session complete. Run /auto-continue for next group."
+```
+
+### Session Limits
+
+| Limit | Value | Reason |
+|-------|-------|--------|
+| Parallel groups per session | 1 | Prevent context exhaustion |
+| Phases per session | All if no parallel | Sequential is lighter |
+| Context usage threshold | 80% | Force checkpoint before overflow |
+
+### Red Flags
+
+- "Just one more group" → NO, checkpoint after each group
+- "Almost done, skip checkpoint" → NEVER skip checkpoints
+- "Context looks fine" → Check actual usage before continuing
+
 ## COMPLETION
 
 Output `<promise>AUTO_COMPLETE</promise>` ONLY when ALL of these are true:
@@ -589,6 +641,74 @@ Output `<promise>AUTO_COMPLETE</promise>` ONLY when ALL of these are true:
 
 If ANY of these are false, DO NOT output the completion promise.
 Continue working or ask for help.
+
+## Two-Agent Mode (Anthropic Best Practice)
+
+For complex tasks, use the Two-Agent Pattern to separate initialization from execution.
+
+### Enabling Two-Agent Mode
+
+Add `--two-agent` flag or configure in auto-context.yaml:
+
+```yaml
+# .claude/auto-context.yaml
+execution_mode: two_agent  # or: single_agent (default)
+```
+
+### Two-Agent Workflow
+
+```
+/auto "Build user authentication" --two-agent
+
+Session 1: Initializer Agent
+  ├── Detect project
+  ├── Classify work type
+  ├── Create plan
+  ├── Write checkpoint
+  └── Signal: INITIALIZER_COMPLETE
+
+/auto-continue
+
+Session 2-N: Coding Agent(s)
+  ├── Read checkpoint
+  ├── Execute parallel group
+  ├── Signal: READY_FOR_QA
+  └── Write checkpoint
+
+/auto-continue
+
+Final Session: Integration
+  ├── Merge branches
+  ├── Run verification
+  └── Signal: AUTO_COMPLETE
+```
+
+### Auto-Detection
+
+Two-agent mode is automatically enabled when:
+- Task has 5+ subtasks (detected during planning)
+- Parallelization is enabled
+- Estimated complexity is HIGH
+
+### Benefits
+
+| Metric | Single Agent | Two-Agent |
+|--------|--------------|-----------|
+| Initial context | ~47K tokens | ~7K tokens |
+| Session boundaries | None | Clear handoffs |
+| Resume capability | Difficult | Easy |
+| Max task size | Limited | Unlimited |
+
+### Initializer Protocol
+
+When two-agent mode is active, follow `initializer-protocol` skill:
+1. Analyze codebase
+2. Create plan
+3. Setup state machine
+4. Write checkpoint
+5. Exit with handoff
+
+See `references/two-agent-pattern.md` for complete documentation.
 
 ## Extended Thinking Guidance (Opus 4.5)
 

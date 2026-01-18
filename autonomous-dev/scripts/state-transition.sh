@@ -15,7 +15,7 @@ MEMORY_DIR=".claude/auto-memory"
 # STATE DEFINITIONS
 # =============================================================================
 
-VALID_STATES=("IDLE" "DETECT" "CLASSIFY" "PLAN" "PARALLELIZE" "EXECUTE" "INTEGRATE" "REVIEW" "COMPLETE" "RESEARCH")
+VALID_STATES=("IDLE" "DETECT" "CLASSIFY" "PLAN" "PARALLELIZE" "EXECUTE" "INTEGRATE" "REVIEW" "COMPLETE" "RESEARCH" "SMART_ANALYZE" "SMART_DIRECT" "SMART_ORCHESTRATED" "SMART_VERIFY")
 VALID_WORK_TYPES=("FRONTEND" "BACKEND" "FULLSTACK" "DOCUMENTATION" "DOCUMENTS" "INTEGRATION" "TESTING" "CREATIVE" "RESEARCH")
 
 # =============================================================================
@@ -84,6 +84,32 @@ get_mandatory_skills() {
             ;;
         "RESEARCH")
             echo ""
+            ;;
+        "SMART_ANALYZE")
+            echo "project-detector,smart-mode"
+            ;;
+        "SMART_DIRECT")
+            case "$work_type" in
+                "FRONTEND")
+                    echo "smart-mode,verification-runner,frontend-design"
+                    ;;
+                *)
+                    echo "smart-mode,verification-runner"
+                    ;;
+            esac
+            ;;
+        "SMART_ORCHESTRATED")
+            case "$work_type" in
+                "FRONTEND")
+                    echo "smart-mode,task-decomposer,verification-runner,frontend-design"
+                    ;;
+                *)
+                    echo "smart-mode,task-decomposer,verification-runner"
+                    ;;
+            esac
+            ;;
+        "SMART_VERIFY")
+            echo "smart-mode,verification-runner"
             ;;
         *)
             echo ""
@@ -385,6 +411,7 @@ Usage:
 
 Valid States:
   IDLE, DETECT, CLASSIFY, PLAN, PARALLELIZE, EXECUTE, INTEGRATE, REVIEW, COMPLETE, RESEARCH
+  SMART_ANALYZE, SMART_DIRECT, SMART_ORCHESTRATED, SMART_VERIFY (for /auto-smart)
 
 Valid Work Types:
   FRONTEND, BACKEND, FULLSTACK, DOCUMENTATION, DOCUMENTS, INTEGRATION, TESTING, CREATIVE, RESEARCH

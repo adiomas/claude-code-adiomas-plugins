@@ -1,7 +1,7 @@
 {
   "name": "autonomous-dev",
-  "version": "3.2.0",
-  "description": "Sophisticated autonomous development with state machine, semantic classification, token management, and graceful degradation",
+  "version": "3.3.0",
+  "description": "Sophisticated autonomous development with state machine, semantic classification, token management, graceful degradation, and Smart Ralph mode",
   "author": {
     "name": "Adiomas",
     "email": "adiomas@example.com"
@@ -17,6 +17,8 @@
     "git-worktree",
     "state-machine",
     "token-management",
-    "semantic-classification"
+    "semantic-classification",
+    "smart-ralph",
+    "fire-and-forget"
   ]
 }

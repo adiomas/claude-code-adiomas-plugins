@@ -44,6 +44,28 @@ phase_specific:
       - verification-runner    # Final verification
     # code-reviewer is an agent, not a skill
 
+  # Smart Ralph phases (for /auto-smart command)
+  SMART_ANALYZE:
+    skills:
+      - smart-mode            # ~800 tokens - complexity detection, mode selection
+    # project-detector is in always_loaded
+
+  SMART_DIRECT:
+    skills:
+      - smart-mode            # Core smart logic
+      - verification-runner   # Verification after changes
+
+  SMART_ORCHESTRATED:
+    skills:
+      - smart-mode            # Core smart logic
+      - task-decomposer       # Phase decomposition
+      - verification-runner   # Verification per phase
+
+  SMART_VERIFY:
+    skills:
+      - smart-mode            # Evidence gate enforcement
+      - verification-runner   # Final verification
+
 # Skills loaded only when specific conditions are met
 on_demand:
   # Load only if project uses specific database

@@ -10,8 +10,20 @@ set -euo pipefail
 
 STATE_FILE=".claude/auto-progress.yaml"
 STATE_MACHINE_FILE=".claude/auto-state-machine.yaml"
+OVERNIGHT_STATE_FILE=".claude/auto-overnight.local.md"
 MEMORY_DIR=".claude/auto-memory"
 TRANSCRIPT="${1:-}"
+
+# =============================================================================
+# OVERNIGHT MODE DETECTION
+# =============================================================================
+OVERNIGHT_MODE=false
+if [[ -f "$OVERNIGHT_STATE_FILE" ]]; then
+    OVERNIGHT_ACTIVE=$(grep "^active:" "$OVERNIGHT_STATE_FILE" | cut -d' ' -f2 | tr -d ' ')
+    if [[ "$OVERNIGHT_ACTIVE" == "true" ]]; then
+        OVERNIGHT_MODE=true
+    fi
+fi
 
 # =============================================================================
 # EARLY EXIT CONDITIONS
@@ -89,6 +101,41 @@ if [[ -n "$TRANSCRIPT" ]]; then
         exit 0
     fi
 
+    # Check for overnight completion
+    if grep -q '<promise>OVERNIGHT_COMPLETE</promise>' "$TRANSCRIPT" 2>/dev/null; then
+        # Mark as complete
+        [[ -f "$STATE_FILE" ]] && yq -i '.status = "done"' "$STATE_FILE"
+        [[ -f "$STATE_FILE" ]] && yq -i ".completed_at = \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"" "$STATE_FILE"
+
+        # Update state machine
+        if [[ -f "$STATE_MACHINE_FILE" ]]; then
+            yq -i '.current_state = "COMPLETE"' "$STATE_MACHINE_FILE"
+            yq -i ".completed_at = \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"" "$STATE_MACHINE_FILE"
+        fi
+
+        # Deactivate overnight mode
+        if [[ -f "$OVERNIGHT_STATE_FILE" ]]; then
+            if [[ "$(uname)" == "Darwin" ]]; then
+                sed -i '' 's/^active: true/active: false/' "$OVERNIGHT_STATE_FILE"
+            else
+                sed -i 's/^active: true/active: false/' "$OVERNIGHT_STATE_FILE"
+            fi
+        fi
+
+        # Send notification
+        SCRIPT_DIR="$(dirname "$0")/.."
+        if [[ -x "$SCRIPT_DIR/scripts/notify.sh" ]]; then
+            "$SCRIPT_DIR/scripts/notify.sh" "Overnight Dev Complete" "All overnight tasks finished successfully!"
+        fi
+
+        # Cleanup memory files
+        if [[ -x "$SCRIPT_DIR/scripts/checkpoint-manager.sh" ]]; then
+            "$SCRIPT_DIR/scripts/checkpoint-manager.sh" cleanup
+        fi
+
+        exit 0
+    fi
+
     # Check for task completion (for parallel tasks)
     if grep -qE '<promise>TASK_DONE: [a-zA-Z0-9_-]+</promise>' "$TRANSCRIPT" 2>/dev/null; then
         # Extract task ID and mark as done
@@ -117,10 +164,37 @@ if [[ "$MAX_ITERATIONS" -gt 0 ]] && [[ "$ITERATION" -ge "$MAX_ITERATIONS" ]]; th
     # GRACEFUL DEGRADATION: Max iterations reached
     # ==========================================================================
 
+    SCRIPT_DIR="$(dirname "$0")/.."
+
+    if [[ "$OVERNIGHT_MODE" == "true" ]]; then
+        # ==========================================================================
+        # OVERNIGHT MODE: Auto-restart instead of handoff
+        # ==========================================================================
+        echo "Max iterations ($MAX_ITERATIONS) reached in overnight mode. Triggering auto-restart..."
+
+        # Create checkpoint before restart
+        if [[ -x "$SCRIPT_DIR/scripts/checkpoint-manager.sh" ]]; then
+            "$SCRIPT_DIR/scripts/checkpoint-manager.sh" handoff
+        fi
+
+        # Trigger overnight restart script
+        if [[ -x "$SCRIPT_DIR/scripts/overnight-restart.sh" ]]; then
+            "$SCRIPT_DIR/scripts/overnight-restart.sh" &
+        fi
+
+        cat << 'EOF'
+{
+  "decision": "allow",
+  "reason": "Overnight mode - auto-restart triggered",
+  "message": "Session limit reached. Auto-restart initiated for overnight mode."
+}
+EOF
+        exit 0
+    fi
+
     echo "Max iterations ($MAX_ITERATIONS) reached. Initiating graceful handoff..."
 
     # Create checkpoint before exiting
-    SCRIPT_DIR="$(dirname "$0")/.."
     if [[ -x "$SCRIPT_DIR/scripts/checkpoint-manager.sh" ]]; then
         "$SCRIPT_DIR/scripts/checkpoint-manager.sh" handoff
     fi
@@ -159,9 +233,36 @@ if [[ -f "$STATE_MACHINE_FILE" ]]; then
             # GRACEFUL DEGRADATION: Token budget exhausted
             # ==========================================================================
             USAGE_DISPLAY=$(awk "BEGIN {printf \"%.0f\", $USAGE_PCT * 100}")
+            SCRIPT_DIR="$(dirname "$0")/.."
+
+            if [[ "$OVERNIGHT_MODE" == "true" ]]; then
+                # ==========================================================================
+                # OVERNIGHT MODE: Auto-restart instead of handoff
+                # ==========================================================================
+                echo "Token budget at ${USAGE_DISPLAY}% in overnight mode. Triggering auto-restart..."
+
+                # Create checkpoint before restart
+                if [[ -x "$SCRIPT_DIR/scripts/checkpoint-manager.sh" ]]; then
+                    "$SCRIPT_DIR/scripts/checkpoint-manager.sh" handoff
+                fi
+
+                # Trigger overnight restart script
+                if [[ -x "$SCRIPT_DIR/scripts/overnight-restart.sh" ]]; then
+                    "$SCRIPT_DIR/scripts/overnight-restart.sh" &
+                fi
+
+                cat << 'EOF'
+{
+  "decision": "allow",
+  "reason": "Overnight mode - auto-restart triggered",
+  "message": "Context limit approaching. Auto-restart initiated for overnight mode."
+}
+EOF
+                exit 0
+            fi
+
             echo "Token budget at ${USAGE_DISPLAY}%. Initiating graceful handoff..."
 
-            SCRIPT_DIR="$(dirname "$0")/.."
             if [[ -x "$SCRIPT_DIR/scripts/checkpoint-manager.sh" ]]; then
                 "$SCRIPT_DIR/scripts/checkpoint-manager.sh" handoff
             fi
@@ -206,6 +307,7 @@ MESSAGE="$MESSAGE Current iteration: $((ITERATION + 1))."
 MESSAGE="$MESSAGE Current task: $CURRENT_TASK."
 [[ -n "$PLAN_FILE" ]] && MESSAGE="$MESSAGE Refer to plan at: $PLAN_FILE."
 [[ -n "$MANDATORY_SKILLS" ]] && MESSAGE="$MESSAGE Mandatory skills: $MANDATORY_SKILLS."
+[[ "$OVERNIGHT_MODE" == "true" ]] && MESSAGE="$MESSAGE OVERNIGHT MODE ACTIVE - work autonomously, no user interaction."
 
 # Block exit and continue
 cat << EOF

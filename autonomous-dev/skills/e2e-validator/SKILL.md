@@ -254,12 +254,165 @@ await browser.close();
 mv .claude/screenshots/current/* .claude/screenshots/archive/$(date +%Y%m%d)/
 ```
 
+## Accessibility Testing (WCAG 2.1 AA)
+
+Automated accessibility testing using axe-core.
+
+### Why Accessibility Matters
+
+- Legal compliance (ADA, Section 508)
+- Better UX for all users
+- SEO benefits
+- Larger potential audience
+
+### Setup
+
+```bash
+# Install axe-core for Playwright
+npm install -D @axe-core/playwright
+```
+
+### Accessibility Test Protocol
+
+```typescript
+import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+
+test('should have no accessibility violations', async ({ page }) => {
+  await page.goto('http://localhost:3000/dashboard');
+
+  const accessibilityScanResults = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+    .analyze();
+
+  expect(accessibilityScanResults.violations).toEqual([]);
+});
+```
+
+### WCAG 2.1 AA Checks
+
+| Category | What's Checked |
+|----------|----------------|
+| **Perceivable** | Alt text, color contrast, text resize |
+| **Operable** | Keyboard navigation, focus visible, no seizures |
+| **Understandable** | Labels, error messages, consistent UI |
+| **Robust** | Valid HTML, ARIA usage |
+
+### Common Violations
+
+| Violation | Impact | Fix |
+|-----------|--------|-----|
+| Missing alt text | Critical | Add `alt` to all `<img>` |
+| Low color contrast | Serious | Increase contrast ratio to 4.5:1 |
+| Missing form labels | Serious | Add `<label>` or `aria-label` |
+| Missing skip link | Moderate | Add skip to main content link |
+| No focus indicator | Serious | Add `:focus` styles |
+
+### Accessibility Report Format
+
+```markdown
+## Accessibility Report
+
+### Summary
+- **Pages tested:** 5
+- **Total violations:** 3
+- **Critical:** 0
+- **Serious:** 2
+- **Moderate:** 1
+
+### Violations by Page
+
+#### /dashboard
+| Rule | Impact | Element | Fix |
+|------|--------|---------|-----|
+| color-contrast | serious | `.stat-label` | Increase contrast from 3.2:1 to 4.5:1 |
+
+#### /login
+| Rule | Impact | Element | Fix |
+|------|--------|---------|-----|
+| label | serious | `#password` | Add associated label element |
+| focus-visible | moderate | `.submit-btn` | Add visible focus indicator |
+
+### Passing Checks
+- ✅ All images have alt text
+- ✅ Heading hierarchy is correct
+- ✅ Keyboard navigation works
+- ✅ ARIA landmarks present
+- ✅ Form inputs have descriptions
+
+### Recommendations
+1. **High:** Fix color contrast on stat labels
+2. **High:** Add labels to login form inputs
+3. **Medium:** Add focus indicators to buttons
+```
+
+### Console Output
+
+```
+═══════════════════════════════════════════════════════════════════
+ ACCESSIBILITY AUDIT (WCAG 2.1 AA)
+═══════════════════════════════════════════════════════════════════
+
+ Pages: 5 | Violations: 3 | Critical: 0 | Serious: 2 | Moderate: 1
+
+ ┌──────────────────────────────────────────────────────────────┐
+ │ Page          │ Critical │ Serious │ Moderate │ Status      │
+ ├──────────────────────────────────────────────────────────────┤
+ │ /dashboard    │    0     │    1    │    0     │ ⚠️ ISSUES   │
+ │ /login        │    0     │    1    │    1     │ ⚠️ ISSUES   │
+ │ /profile      │    0     │    0    │    0     │ ✅ PASS     │
+ │ /settings     │    0     │    0    │    0     │ ✅ PASS     │
+ │ /404          │    0     │    0    │    0     │ ✅ PASS     │
+ └──────────────────────────────────────────────────────────────┘
+
+ Blocking: NO (no critical violations)
+ Report: .claude/reports/accessibility-{timestamp}.md
+
+═══════════════════════════════════════════════════════════════════
+```
+
+### Configuration
+
+```yaml
+# .claude/auto-config.yaml
+accessibility:
+  enabled: true
+  standard: wcag21aa  # wcag2a | wcag2aa | wcag21aa
+  block_on_critical: true
+  block_on_serious: false  # Set true for strict mode
+  skip_paths:
+    - "/admin/*"  # Internal tools
+    - "/debug/*"
+  custom_rules:
+    - no-positive-tabindex
+    - landmark-one-main
+```
+
+### Integration with Workflow
+
+Add to Phase 6 when work_type == FRONTEND:
+
+```markdown
+### 6.1.4 Accessibility Audit
+
+**For FRONTEND work types:**
+
+1. Run axe-core accessibility scan
+2. Generate a11y report
+3. Flag blocking issues (critical violations)
+
+**Blocking Criteria:**
+- Any critical violation → BLOCK
+- Serious violations in new code → BLOCK (if strict mode)
+```
+
 ## Additional Resources
 
 ### Reference Files
 
 - **`references/viewport-sizes.md`** - Standard viewport dimensions
 - **`references/comparison-tools.md`** - Pixel comparison libraries
+- **`references/wcag-checklist.md`** - Full WCAG 2.1 AA checklist
 
 ## When NOT to Use This Skill
 
@@ -268,3 +421,4 @@ Do NOT use this skill when:
 - No UI components changed
 - Headless browser not available
 - Test is API-only
+- Internal admin tools (unless required)

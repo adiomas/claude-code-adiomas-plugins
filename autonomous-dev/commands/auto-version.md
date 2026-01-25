@@ -7,18 +7,34 @@ allowed-tools: []
 
 # Autonomous Dev Plugin Version
 
-**Version: 3.4.0**
+**Version: 3.6.0**
 
 Plugin: autonomous-dev
 Marketplace: adiomas-plugins
 
-## What's New in 3.4.0
+## What's New in 3.6.0
 
-- **Smart Ralph Mode** (`/auto-smart`): Intelligent autonomous development
-  - Automatic complexity detection (1-5 scale)
-  - DIRECT mode for simple tasks
-  - ORCHESTRATED mode for complex tasks
-  - Graduated failure recovery (Pivot → Research → Checkpoint)
-  - Evidence gates prevent hallucinations
-  - Auto-resume on session restart
-  - NO approval gates - fully autonomous
+- **AI Code Quality Score** - Semantic code quality analysis
+  - Complexity score (1-10): Cognitive load measurement
+  - Maintainability index (1-10): Long-term code health
+  - Architecture compliance (1-10): Pattern adherence
+  - Duplication score (1-10): DRY compliance
+  - Overall health score (1-10): Weighted average
+  - Blocks merge if quality below thresholds
+
+- **Auto-Rollback** - Automatic recovery from failures
+  - Task rollback: Revert single task changes
+  - Full rollback: Return to last checkpoint
+  - Partial rollback: Keep working, revert broken
+  - Rollback history logging
+  - Backup branch creation before destructive actions
+
+- **Accessibility Testing (WCAG 2.1 AA)**
+  - axe-core integration for a11y audit
+  - Perceivable, Operable, Understandable, Robust checks
+  - Blocks on critical accessibility violations
+  - Detailed violation reports with fix suggestions
+
+- **New Skills**
+  - `ai-code-quality`: LLM-based code analysis
+  - `rollback-manager`: Auto-rollback on verify fail

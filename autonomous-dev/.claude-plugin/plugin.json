@@ -1,7 +1,7 @@
 {
   "name": "autonomous-dev",
-  "version": "3.4.0",
-  "description": "Sophisticated autonomous development with state machine, semantic classification, token management, graceful degradation, Smart Ralph mode, and overnight autonomous execution",
+  "version": "3.6.0",
+  "description": "Sophisticated autonomous development with Two-Agent Pattern, state machine, semantic classification, token management, Smart Ralph mode, and overnight execution",
   "author": {
     "name": "Adiomas",
     "email": "adiomas@example.com"
@@ -21,6 +21,9 @@
     "smart-ralph",
     "fire-and-forget",
     "overnight-mode",
-    "unattended"
+    "unattended",
+    "two-agent-pattern",
+    "session-handoff",
+    "context-optimization"
   ]
 }

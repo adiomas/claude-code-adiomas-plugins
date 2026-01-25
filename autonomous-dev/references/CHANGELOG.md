@@ -5,6 +5,68 @@ All notable changes to the autonomous-dev plugin will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.0] - 2026-01-25
+
+### Added
+- **AI Code Quality Score** (`ai-code-quality` skill)
+  - LLM-based semantic code analysis beyond linting
+  - 5 quality dimensions: complexity, maintainability, architecture, duplication, health
+  - Configurable thresholds for blocking/warning
+  - Detailed reports with recommendations
+  - Blocks merge if overall health < 5
+
+- **Auto-Rollback Mechanism** (`rollback-manager` skill)
+  - Automatic rollback when verification fails
+  - Task rollback (single task), full rollback (checkpoint), partial rollback
+  - Rollback history logging for debugging
+  - Backup branch creation before destructive actions
+  - Configurable retry/skip/abort behavior
+
+- **Accessibility Testing** (WCAG 2.1 AA)
+  - axe-core integration in `e2e-validator` skill
+  - Checks for perceivable, operable, understandable, robust criteria
+  - Violation reports with impact levels and fix suggestions
+  - Blocks on critical accessibility violations
+  - Configurable standards (wcag2a, wcag2aa, wcag21aa)
+
+### Changed
+- `/auto-execute` now includes ai-code-quality analysis in review phase
+- `/auto-execute` now auto-rolls back on verification failure
+- `e2e-validator` now includes accessibility testing section
+- Skills integration table updated with new skills
+
+## [3.5.0] - 2026-01-25
+
+### Added
+- **Two-Agent Pattern Workflow** (`/auto-prepare` + `/auto-execute`)
+  - `/auto-prepare`: Interactive planning phase with user input
+  - `/auto-execute --overnight`: Autonomous execution from prepared state
+  - Implements Anthropic's Two-Agent Pattern (Initializer + Coding Agent)
+  - Optimized context management with ~1KB bootstrap vs ~50KB full context
+- **New Skills**
+  - `execution-bootstrap`: Fast context bootstrap from state files
+  - `session-handoff`: Proper session ending with state persistence
+- **State File Structure** (`.claude/auto-execution/`)
+  - `state.yaml`: Machine-readable execution state
+  - `tasks.json`: Task list with dependencies (JSON for model safety)
+  - `progress.md`: Human-readable progress tracking
+  - `next-session.md`: Minimal context for fast session bootstrap
+- **Enhanced /auto-execute**
+  - `--overnight` flag for fully autonomous execution
+  - `--continue` flag for resuming from checkpoints
+  - Context limit handling with auto-restart
+  - Backwards compatibility with legacy plan-only mode
+
+### Changed
+- `/auto-execute` now reads from prepared state files first
+- Session handoff protocol for reliable multi-session execution
+- Task status tracking with evidence capture
+
+### Documentation
+- Added Anthropic best practices research to plan documentation
+- Added Cursor scaling agents research findings
+- Context engineering guidelines from official documentation
+
 ## [3.4.0] - 2025-01-24
 
 ### Added

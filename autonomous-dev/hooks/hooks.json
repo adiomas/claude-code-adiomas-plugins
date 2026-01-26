@@ -1,6 +1,18 @@
 {
-  "description": "Autonomous development v4.0 AGI-like interface hooks with /do command, memory, and learning",
+  "description": "Autonomous development v4.2 AGI-like interface hooks with /do command, memory, learning, and plan approval enforcement",
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/enforce-plan-approval.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "matcher": "*",

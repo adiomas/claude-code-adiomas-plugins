@@ -136,6 +136,44 @@ phases:
     estimated_tokens: 3000
 ```
 
+## Pre-Execution Gate
+
+### CRITICAL: Approval Check
+
+**Before ANY execution begins, verify user has approved the plan.**
+
+```python
+def verify_approval(self) -> bool:
+    """Verify plan was approved before execution.
+
+    CRITICAL: This check MUST pass before ANY implementation.
+    If approval was skipped, DO NOT PROCEED.
+    """
+
+    # Check state for approval
+    state = load_state()
+
+    if not state.get("plan_approved"):
+        output("⚠️  Plan nije odobren. Prekidam izvršavanje.")
+        output("   Koristi AskUserQuestion za odobrenje plana.")
+        return False
+
+    return True
+```
+
+### Approval State
+
+The approval state is set by the Strategist after user confirms via AskUserQuestion:
+
+```python
+# In strategist.md, after user approval:
+update_state({
+    "plan_approved": True,
+    "approved_at": datetime.now().isoformat(),
+    "plan_path": plan_file_path
+})
+```
+
 ## Execution Flow
 
 ### Main Loop
@@ -143,6 +181,14 @@ phases:
 ```python
 def execute(self) -> ExecutionResult:
     """Execute task in phases with TDD and checkpoints."""
+
+    # GATE: Verify approval first
+    if not verify_approval():
+        return ExecutionResult(
+            success=False,
+            error="Plan not approved",
+            mode="ORCHESTRATED"
+        )
 
     results = []
 

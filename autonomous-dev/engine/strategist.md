@@ -528,6 +528,156 @@ def handle_mode_switch(execution: Execution) -> Strategy:
     return orchestrated
 ```
 
+## Plan Approval Gate
+
+### CRITICAL: User Approval Required for ORCHESTRATED
+
+Before execution begins, ORCHESTRATED strategy MUST obtain user approval.
+
+```python
+def request_plan_approval(strategy: OrchestratedStrategy) -> ApprovalResult:
+    """Request user approval before ORCHESTRATED execution."""
+
+    # 1. Generate plan summary
+    plan_summary = generate_plan_summary(strategy)
+
+    # 2. Write full plan to file
+    plan_path = write_plan_file(strategy)
+
+    # 3. Display summary to user
+    output(f"""
+Plan spreman za: {strategy.intent.summary}
+Mode: ORCHESTRATED ({len(strategy.phases)} faza)
+Estimated: {strategy._estimate_tokens()} tokena
+
+Faze:
+{format_phases(strategy.phases)}
+
+Plan file: {plan_path}
+    """)
+
+    # 4. MANDATORY: Ask for approval using AskUserQuestion
+    #    DO NOT auto-proceed. DO NOT skip.
+    approval = ask_user_question(
+        question="Želiš li nastaviti s implementacijom?",
+        options=[
+            {"label": "Nastavi", "description": "Pokreni implementaciju prema planu"},
+            {"label": "Pregledaj plan", "description": "Prikaži detaljan plan prije odluke"},
+            {"label": "Odustani", "description": "Prekini bez implementacije"}
+        ]
+    )
+
+    if approval == "Nastavi":
+        return ApprovalResult(approved=True)
+    elif approval == "Pregledaj plan":
+        # Show full plan, ask again
+        show_full_plan(plan_path)
+        return request_plan_approval(strategy)  # Recursive
+    else:
+        return ApprovalResult(approved=False, reason="User cancelled")
+
+
+def generate_plan_summary(strategy: OrchestratedStrategy) -> str:
+    """Generate concise plan summary for user review."""
+
+    lines = []
+    for phase in strategy.phases:
+        files_str = ", ".join(phase.files[:3]) if phase.files else "TBD"
+        if len(phase.files) > 3:
+            files_str += f" (+{len(phase.files) - 3} more)"
+        lines.append(f"  {phase.id}. {phase.name}: {phase.description}")
+        lines.append(f"     Files: {files_str}")
+
+    return "\n".join(lines)
+
+
+def write_plan_file(strategy: OrchestratedStrategy) -> str:
+    """Write detailed plan to .claude/plans/ directory."""
+
+    import datetime
+    session_id = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    plan_path = f".claude/plans/auto-{session_id}.md"
+
+    plan_content = f"""# Execution Plan
+
+## Task
+{strategy.intent.original_input}
+
+## Classification
+- Intent: {strategy.intent.classification.intent_type}
+- Complexity: {strategy.intent.classification.complexity}/5
+- Work Type: {strategy.intent.classification.work_type}
+
+## Strategy
+- Mode: ORCHESTRATED
+- Phases: {len(strategy.phases)}
+- Estimated Tokens: {strategy._estimate_tokens()}
+- Handoff Likely: {strategy._is_handoff_likely()}
+
+## Phases
+
+{format_phases_detailed(strategy.phases)}
+
+## Verification Plan
+
+After each phase:
+- Run tests
+- Check lint
+- Verify types
+
+Final verification:
+- Full test suite
+- Build check
+- Integration tests
+
+## TDD Configuration
+- Framework: {strategy.config.tdd.framework}
+- Coverage Threshold: {strategy.config.tdd.coverage_threshold}%
+
+---
+Generated: {datetime.datetime.now().isoformat()}
+"""
+
+    # Write to file
+    write_file(plan_path, plan_content)
+    return plan_path
+```
+
+### Approval Flow
+
+```
+Strategy Selected (ORCHESTRATED)
+         │
+         ▼
+   Write Plan File
+         │
+         ▼
+   Display Summary
+         │
+         ▼
+┌─────────────────────────────────────┐
+│  AskUserQuestion:                   │
+│  "Želiš li nastaviti?"              │
+│                                     │
+│  [Nastavi] [Pregledaj] [Odustani]   │
+└─────────────────────────────────────┘
+         │
+    ┌────┴────┐
+    │         │
+ Nastavi   Odustani
+    │         │
+    ▼         ▼
+ Execute    Exit
+```
+
+### IMPORTANT
+
+- **NEVER** auto-proceed to execution without explicit user approval
+- **ALWAYS** use AskUserQuestion tool for approval
+- **ALWAYS** provide "Odustani" option
+- Plan file MUST be written before asking for approval
+- For DIRECT strategy, approval is NOT required (simple tasks)
+
 ## Integration
 
 ### With Resolver
@@ -537,8 +687,8 @@ Receives resolved intent with confirmation to proceed.
 ### With Executors
 
 Passes strategy to appropriate executor:
-- DirectStrategy → DirectExecutor
-- OrchestratedStrategy → OrchestratedExecutor
+- DirectStrategy → DirectExecutor (no approval needed)
+- OrchestratedStrategy → OrchestratedExecutor (AFTER approval)
 
 ### With Memory
 

@@ -71,27 +71,105 @@ Always output the execution decision:
 └─────────────────────────────────────────────────────────────┘
 ```
 
+## Agent Pool Architecture (v4.2)
+
+### Overview
+
+Instead of creating worktrees one-by-one, use a managed pool for better resource utilization:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    AGENT POOL COORDINATOR                     │
+│                     (scripts/pool-manager.sh)                 │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐     │
+│  │              WORKTREE POOL (Max 8)                  │     │
+│  │                                                     │     │
+│  │   ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐         │     │
+│  │   │WT-1 │ │WT-2 │ │WT-3 │ │WT-4 │ │WT-5 │ ...     │     │
+│  │   │BUSY │ │BUSY │ │IDLE │ │BUSY │ │IDLE │         │     │
+│  │   └──┬──┘ └──┬──┘ └─────┘ └──┬──┘ └─────┘         │     │
+│  │      │       │               │                     │     │
+│  │      ▼       ▼               ▼                     │     │
+│  │   [Task A] [Task B]       [Task C]                 │     │
+│  └─────────────────────────────────────────────────────┘     │
+│                           │                                   │
+│                           ▼                                   │
+│              ┌─────────────────────────┐                     │
+│              │   MERGE COORDINATOR     │                     │
+│              │  (conflict resolution)  │                     │
+│              └─────────────────────────┘                     │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Pool Benefits
+
+- **Pre-allocated slots** - 8 worktrees ready to use
+- **Dynamic allocation** - Tasks acquire/release as needed
+- **Status tracking** - Know which slots are busy/idle
+- **Automatic cleanup** - Pool manager handles lifecycle
+- **Better scaling** - Handle 5-8 parallel tasks efficiently
+
+### Pool Operations
+
+```bash
+# Initialize pool (run once at session start)
+${CLAUDE_PLUGIN_ROOT}/scripts/pool-manager.sh init 8
+
+# Check pool status
+${CLAUDE_PLUGIN_ROOT}/scripts/pool-manager.sh status
+
+# Acquire worktree for task
+${CLAUDE_PLUGIN_ROOT}/scripts/pool-manager.sh acquire task-login-form
+# Output: wt-1|/path/to/worktree|auto/task-login-form
+
+# Release worktree back to pool
+${CLAUDE_PLUGIN_ROOT}/scripts/pool-manager.sh release wt-1
+
+# Merge all busy worktrees
+${CLAUDE_PLUGIN_ROOT}/scripts/pool-manager.sh merge main
+
+# Full cleanup
+${CLAUDE_PLUGIN_ROOT}/scripts/pool-manager.sh cleanup
+```
+
 ## Worktree Strategy
 
-Each independent task receives its own git worktree:
+Each independent task receives its own git worktree from the pool:
 - **Isolated filesystem** - No interference between tasks
 - **Own branch** - Clean git history per task
 - **Independent testing** - Run verification without conflicts
 - **Easy merging** - Standard git merge workflow
+- **Pooled resources** - Efficient reuse of worktree slots
 
 ## Dispatch Protocol
 
-### Step 1: Create Worktrees
+### Step 0: Initialize Pool (Session Start)
+
+At the start of a parallel session:
+```bash
+# Initialize pool with 8 slots
+${CLAUDE_PLUGIN_ROOT}/scripts/pool-manager.sh init 8
+```
+
+### Step 1: Acquire Worktrees from Pool
 
 For each task in a parallel group:
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/setup-worktree.sh task-{id}
+# Acquire from pool (returns: wt_id|path|branch)
+result=$(${CLAUDE_PLUGIN_ROOT}/scripts/pool-manager.sh acquire task-{id})
+WT_ID=$(echo "$result" | cut -d'|' -f1)
+WT_PATH=$(echo "$result" | cut -d'|' -f2)
+BRANCH=$(echo "$result" | cut -d'|' -f3)
 ```
 
-This creates:
-- Worktree at `/tmp/auto-worktrees/task-{id}/`
-- Branch at `auto/task-{id}`
-- Copied project profile for context
+This:
+- Allocates a slot from the pool
+- Creates worktree at `.claude/worktree-pool/wt-{N}/`
+- Creates branch at `auto/task-{id}`
+- Copies project profile for context
+- Updates pool state
 
 ### Step 2: Dispatch Agents
 
@@ -214,7 +292,18 @@ For merge conflicts:
 
 ### Step 4: Clean Up
 
-Remove completed worktrees:
+Release worktrees back to pool:
+```bash
+# Release each completed worktree
+${CLAUDE_PLUGIN_ROOT}/scripts/pool-manager.sh release wt-1
+${CLAUDE_PLUGIN_ROOT}/scripts/pool-manager.sh release wt-2
+# ...
+
+# Or cleanup entire pool after session
+${CLAUDE_PLUGIN_ROOT}/scripts/pool-manager.sh cleanup
+```
+
+For legacy single-worktree cleanup:
 ```bash
 git worktree remove /tmp/auto-worktrees/task-{id}
 git branch -d auto/task-{id}
@@ -231,9 +320,23 @@ For detailed worktree management:
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/setup-worktree.sh` | Create isolated worktree |
+| `scripts/pool-manager.sh` | **NEW** - Manage agent pool (init/acquire/release/status) |
+| `scripts/setup-worktree.sh` | Create isolated worktree (legacy, single use) |
 | `scripts/merge-branches.sh` | Merge all auto/* branches |
 | `scripts/state-transition.sh` | Manage state machine |
+
+### Pool Manager Commands
+
+| Command | Description |
+|---------|-------------|
+| `pool-manager.sh init [size]` | Initialize pool (default: 8 slots) |
+| `pool-manager.sh acquire <task_id>` | Get worktree for task |
+| `pool-manager.sh release <wt_id>` | Return worktree to pool |
+| `pool-manager.sh status` | Show pool status |
+| `pool-manager.sh merge [branch]` | Merge all busy worktrees |
+| `pool-manager.sh cleanup` | Remove all worktrees |
+| `pool-manager.sh reset [size]` | Full pool reset |
+| `pool-manager.sh health` | Check pool health |
 
 ## Progress Tracking (REQUIRED)
 

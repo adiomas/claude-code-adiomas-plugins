@@ -327,7 +327,55 @@ When `/do` is invoked:
    If complexity >= 3 → ORCHESTRATED
    ```
 
-7. **Execute**
+7. **Plan Approval Gate** (ORCHESTRATED only)
+
+   ⚠️ **ENFORCED BY HOOK**: `hooks/enforce-plan-approval.sh` will BLOCK
+   Edit/Write operations if this step is skipped!
+
+   ```
+   IF strategy == ORCHESTRATED AND complexity >= 3:
+
+     1. Mark /do session active:
+        Bash: ${CLAUDE_PLUGIN_ROOT}/scripts/set-plan-approved.sh start-do
+
+     2. Write plan to .claude/plans/{session-id}.md
+        - Include: phases, files, estimated tokens
+        - Include: TDD requirements, verification steps
+
+     3. Display plan summary to user:
+        "Plan spreman za: {task_summary}
+         Mode: ORCHESTRATED ({num_phases} faza)
+         Estimated: {token_estimate} tokena
+
+         Faze:
+         1. {phase_1_name} - {phase_1_desc}
+         2. {phase_2_name} - {phase_2_desc}
+         ..."
+
+     4. **MANDATORY: Use AskUserQuestion tool**
+        Question: "Želiš li nastaviti s implementacijom?"
+        Options:
+          - "Nastavi" → Set approval and proceed
+          - "Pregledaj plan" → Show full plan, then ask again
+          - "Odustani" → Exit gracefully
+
+     5. IF user confirms "Nastavi":
+        Bash: ${CLAUDE_PLUGIN_ROOT}/scripts/set-plan-approved.sh true
+        (This sets plan_approved=true in state, allowing Edit/Write)
+
+     6. IF user selects "Odustani":
+        Bash: ${CLAUDE_PLUGIN_ROOT}/scripts/set-plan-approved.sh end-do
+        Exit gracefully
+
+     7. ONLY proceed to step 8 if user explicitly confirms
+        DO NOT auto-proceed. DO NOT skip this step.
+        The PreToolUse hook will BLOCK any Edit/Write attempts!
+
+   IF strategy == DIRECT:
+     Skip to step 8 (no approval needed for simple tasks)
+   ```
+
+8. **Execute**
    ```
    If DIRECT:
      Invoke: execution/direct-executor.md

@@ -350,10 +350,10 @@
       "verification_command": "jq '.' autonomous-dev/.claude-plugin/plugin.json > /dev/null && echo 'Valid JSON'",
       "expected_output": "Valid JSON",
       "complexity": "S",
-      "status": "pending",
-      "started_at": null,
-      "completed_at": null,
-      "evidence": null
+      "status": "done",
+      "started_at": "2025-01-26T15:00:00Z",
+      "completed_at": "2025-01-26T15:02:00Z",
+      "evidence": "Valid JSON"
     },
     {
       "id": "task-5.4",
@@ -364,10 +364,10 @@
       "verification_command": "grep -l 'DEPRECATED' autonomous-dev/commands/auto*.md | wc -l",
       "expected_output": "3",
       "complexity": "S",
-      "status": "pending",
-      "started_at": null,
-      "completed_at": null,
-      "evidence": null
+      "status": "done",
+      "started_at": "2025-01-26T15:02:00Z",
+      "completed_at": "2025-01-26T15:05:00Z",
+      "evidence": "3"
     },
     {
       "id": "task-6.1",

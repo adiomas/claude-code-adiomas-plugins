@@ -1,6 +1,7 @@
 ---
 name: auto-lite
 description: |
+  DEPRECATED: Use /do instead. This command will be removed in v5.0.
   Lightweight autonomous development for simple tasks.
   Skips brainstorming and planning phases - goes straight to execution.
   Use for typo fixes, simple refactors, or well-defined small changes.
@@ -8,7 +9,19 @@ argument-hint: "<simple task description>"
 allowed-tools: ["Task", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "TodoWrite"]
 ---
 
-# Autonomous Development - Lite Mode
+# DEPRECATED - Use /do Instead
+
+> **This command is deprecated.** Use `/do <task>` for the new AGI-like interface.
+>
+> The new `/do` command automatically detects simple tasks and uses DIRECT mode.
+> No need for a separate "lite" command - `/do` adapts to complexity.
+>
+> Migration: Simply replace `/auto-lite <task>` with `/do <task>`
+> See: `autonomous-dev/docs/migration-v4.md` for details.
+
+---
+
+# Autonomous Development - Lite Mode (Legacy)
 
 A streamlined version of `/auto` for simple, well-defined tasks.
 

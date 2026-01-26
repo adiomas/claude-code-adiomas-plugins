@@ -1,6 +1,7 @@
 ---
 name: auto-smart
 description: |
+  DEPRECATED: Use /do instead. This command will be removed in v5.0.
   Intelligent autonomous development - the best of Ralph Wiggum and autonomous-dev combined.
   Analyzes complexity, chooses optimal mode (DIRECT vs ORCHESTRATED), executes fully autonomously.
   NO approval gates - fire and forget with intelligent recovery.
@@ -8,7 +9,22 @@ argument-hint: "<task description>"
 allowed-tools: ["Task", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "TodoWrite", "Skill"]
 ---
 
-# Smart Ralph - Intelligent Autonomous Development
+# DEPRECATED - Use /do Instead
+
+> **This command is deprecated.** Use `/do <task>` for the new AGI-like interface.
+>
+> The new `/do` command includes all features of `/auto-smart`:
+> - Automatic complexity scoring
+> - DIRECT vs ORCHESTRATED mode selection
+> - Fire and forget execution
+> - Intelligent recovery
+>
+> Migration: Simply replace `/auto-smart <task>` with `/do <task>`
+> See: `autonomous-dev/docs/migration-v4.md` for details.
+
+---
+
+# Smart Ralph - Intelligent Autonomous Development (Legacy)
 
 Combines Ralph Wiggum's simplicity with autonomous-dev's intelligence. Fully autonomous execution without approval gates.
 

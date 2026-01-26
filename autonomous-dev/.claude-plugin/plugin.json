@@ -1,7 +1,7 @@
 {
   "name": "autonomous-dev",
-  "version": "3.6.0",
-  "description": "Sophisticated autonomous development with Two-Agent Pattern, state machine, semantic classification, token management, Smart Ralph mode, and overnight execution",
+  "version": "4.0.0",
+  "description": "AGI-like autonomous development with single /do command, hybrid memory, adaptive execution, and multi-session orchestration",
   "author": {
     "name": "Adiomas",
     "email": "adiomas@example.com"
@@ -13,17 +13,17 @@
     "autonomous",
     "development",
     "automation",
-    "parallel",
-    "git-worktree",
-    "state-machine",
-    "token-management",
-    "semantic-classification",
-    "smart-ralph",
-    "fire-and-forget",
-    "overnight-mode",
-    "unattended",
-    "two-agent-pattern",
-    "session-handoff",
-    "context-optimization"
+    "agi-like",
+    "natural-language",
+    "intent-engine",
+    "hybrid-memory",
+    "tdd",
+    "adaptive-execution",
+    "multi-session",
+    "claude-agi",
+    "orchestrator",
+    "checkpoints",
+    "learning",
+    "complexity-scoring"
   ]
 }

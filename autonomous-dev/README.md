@@ -1,6 +1,26 @@
-# Autonomous Dev Plugin
+# Autonomous Dev Plugin v4.0
 
-Universal autonomous development system for Claude Code. Describe what you want, and let Claude handle the rest - from planning to implementation to verification.
+AGI-like autonomous development for Claude Code. Single `/do` command understands natural language, remembers context, and executes with TDD discipline.
+
+## What's New in v4.0
+
+**AGI-Like Interface** - One command to rule them all:
+
+```bash
+# Instead of choosing between /auto, /auto-smart, /auto-lite...
+/do Add dark mode with system preference detection
+```
+
+**Key Features:**
+- **Intent Engine** - Parses natural language, resolves references ("fix that bug from yesterday")
+- **Hybrid Memory** - Local (90-day project context) + Global (shared patterns across projects)
+- **Adaptive Execution** - DIRECT mode for simple tasks, ORCHESTRATED for complex
+- **ML-Based Complexity** - Learns from your coding patterns
+- **Multi-Session Orchestration** - `claude-agi` manages handoffs automatically
+
+**Migration:** Replace `/auto`, `/auto-smart`, `/auto-lite` with `/do`. See [Migration Guide](docs/migration-v4.md).
+
+---
 
 ## Installation
 
@@ -26,14 +46,22 @@ git clone https://github.com/adiomas/claude-code-adiomas-plugins.git
 claude --plugin-dir /path/to/claude-code-adiomas-plugins/autonomous-dev
 ```
 
+### Install claude-agi Orchestrator (Optional)
+
+For multi-session tasks:
+
+```bash
+./autonomous-dev/bin/install-claude-agi.sh
+```
+
 ### Verify Installation
 
 After restarting Claude Code:
 ```
-/auto --help
+/do --help
 ```
 
-If you see the autonomous development help, installation was successful.
+If you see the /do command help, installation was successful.
 
 ## Features
 
@@ -75,30 +103,53 @@ npm install -g yq
 # Start Claude Code
 claude
 
-# Full autonomous mode
-/auto Add user authentication with JWT tokens
+# AGI-like interface (v4.0 - recommended)
+/do Add user authentication with JWT tokens
 
-# Or plan first, execute later
-/auto-plan Add a dashboard with analytics
-# Review plan at .claude/plans/auto-*.md
-/auto-execute
-
-# Check progress during execution
-/auto-status
+# Check progress
+/status
 
 # Cancel if needed
-/auto-cancel
+/cancel
+
+# For multi-session tasks, use claude-agi orchestrator
+claude-agi "Implement complete payment system"
 ```
 
 ## Commands
 
+### Primary Commands (v4.0)
+
 | Command | Description | Usage |
 |---------|-------------|-------|
-| `/auto` | Full autonomous development mode | `/auto <feature description>` |
-| `/auto-plan` | Create plan without executing | `/auto-plan <feature description>` |
-| `/auto-execute` | Execute existing approved plan | `/auto-execute [plan-file]` |
-| `/auto-status` | Check execution progress | `/auto-status` |
-| `/auto-cancel` | Cancel and clean up | `/auto-cancel` |
+| `/do` | AGI-like autonomous development | `/do <natural language task>` |
+| `/status` | Check execution progress | `/status` |
+| `/cancel` | Cancel and clean up | `/cancel` |
+
+### Multi-Session Orchestrator
+
+```bash
+# Interactive mode (prompts after each session)
+claude-agi "Build feature X"
+
+# Fire-and-forget overnight mode
+claude-agi --overnight "Major refactoring"
+
+# Continue interrupted task
+claude-agi --continue
+```
+
+### Legacy Commands (Deprecated)
+
+| Command | Status | Migration |
+|---------|--------|-----------|
+| `/auto` | Deprecated | Use `/do` |
+| `/auto-smart` | Deprecated | Use `/do` |
+| `/auto-lite` | Deprecated | Use `/do` |
+| `/auto-plan` | Still works | Or use `/do` directly |
+| `/auto-execute` | Still works | Or use `/do` directly |
+| `/auto-status` | Deprecated | Use `/status` |
+| `/auto-cancel` | Deprecated | Use `/cancel` |
 
 ## How It Works
 

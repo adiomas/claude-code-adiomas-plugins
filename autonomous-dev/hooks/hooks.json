@@ -1,5 +1,5 @@
 {
-  "description": "Autonomous development v3.1 lifecycle hooks with state machine and smart-ralph integration",
+  "description": "Autonomous development v4.0 AGI-like interface hooks with /do command, memory, and learning",
   "hooks": {
     "SessionStart": [
       {
@@ -19,6 +19,11 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/smart-resume-check.sh",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/local-memory.sh load 2>/dev/null || true",
+            "timeout": 5
           }
         ]
       }
@@ -31,6 +36,11 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/stop-hook.sh",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-end-learning.sh",
+            "timeout": 30
           }
         ]
       }

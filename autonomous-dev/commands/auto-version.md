@@ -7,12 +7,12 @@ allowed-tools: []
 
 # Autonomous Dev Plugin Version
 
-**Version: 3.6.0**
+**Version: 4.0.0**
 
 Plugin: autonomous-dev
 Marketplace: adiomas-plugins
 
-## What's New in 3.6.0
+## What's New in 4.0.0
 
 - **AI Code Quality Score** - Semantic code quality analysis
   - Complexity score (1-10): Cognitive load measurement

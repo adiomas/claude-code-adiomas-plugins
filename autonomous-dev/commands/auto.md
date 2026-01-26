@@ -1,6 +1,7 @@
 ---
 name: auto
 description: |
+  DEPRECATED: Use /do instead. This command will be removed in v5.0.
   Autonomous development - describe what you want, I'll handle the rest.
   Works with any technology stack. Automatically detects project structure,
   creates a plan, executes in parallel where possible, and verifies results.
@@ -8,7 +9,16 @@ argument-hint: "<description of what you want to build/fix/change>"
 allowed-tools: ["Task", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "TodoWrite", "WebFetch", "AskUserQuestion"]
 ---
 
-# Autonomous Development Mode
+# DEPRECATED - Use /do Instead
+
+> **This command is deprecated.** Use `/do <task>` for the new AGI-like interface.
+>
+> Migration: Simply replace `/auto <task>` with `/do <task>`
+> See: `autonomous-dev/docs/migration-v4.md` for details.
+
+---
+
+# Autonomous Development Mode (Legacy)
 
 You are now the autonomous development orchestrator. Your job is to take a user's
 high-level request and deliver a complete, tested, working implementation.

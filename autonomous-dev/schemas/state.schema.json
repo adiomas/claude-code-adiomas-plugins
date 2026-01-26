@@ -1,0 +1,286 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claude-agi.dev/schemas/state.schema.json",
+  "title": "Unified AGI State",
+  "description": "Single source of truth for AGI-like autonomous execution state",
+  "type": "object",
+  "required": ["version", "task", "project", "execution"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "2.0",
+      "description": "Schema version"
+    },
+    "task": {
+      "type": "object",
+      "description": "Current task being executed",
+      "required": ["input", "intent", "complexity", "started_at"],
+      "properties": {
+        "input": {
+          "type": "string",
+          "description": "Original user input"
+        },
+        "intent": {
+          "type": "string",
+          "enum": ["FEATURE", "BUG_FIX", "RESEARCH", "REFACTOR", "QUESTION"],
+          "description": "Classified intent type"
+        },
+        "complexity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Task complexity (1=simple, 5=very complex)"
+        },
+        "work_type": {
+          "type": "string",
+          "enum": ["FRONTEND", "BACKEND", "FULLSTACK", "INFRASTRUCTURE", "DOCUMENTATION"],
+          "description": "Type of work"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When task started"
+        },
+        "entities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Extracted entities (files, functions, etc.)"
+        },
+        "references": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Resolved references (e.g., 'ono od jučer')"
+        }
+      }
+    },
+    "project": {
+      "type": "object",
+      "description": "Project configuration",
+      "required": ["stack"],
+      "properties": {
+        "stack": {
+          "type": "string",
+          "description": "Technology stack"
+        },
+        "test_cmd": {
+          "type": "string",
+          "description": "Test command"
+        },
+        "build_cmd": {
+          "type": "string",
+          "description": "Build command"
+        },
+        "lint_cmd": {
+          "type": "string",
+          "description": "Lint command"
+        },
+        "quirks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Project-specific quirks to remember"
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "description": "Execution state",
+      "required": ["strategy", "status"],
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": ["DIRECT", "ORCHESTRATED"],
+          "description": "Execution strategy"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "running", "paused", "handoff_pending", "done", "stuck", "cancelled"],
+          "description": "Current execution status"
+        },
+        "current_phase": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Current phase index"
+        },
+        "phases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Phase"
+          },
+          "description": "Execution phases (for ORCHESTRATED mode)"
+        },
+        "files_created": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Files created during execution"
+        },
+        "files_modified": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Files modified during execution"
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "description": "Verification evidence",
+      "additionalProperties": {
+        "$ref": "#/$defs/Evidence"
+      }
+    },
+    "context": {
+      "type": "object",
+      "description": "Session context",
+      "properties": {
+        "tokens_used": {
+          "type": "integer",
+          "description": "Approximate tokens used"
+        },
+        "key_decisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Decision"
+          },
+          "description": "Key decisions made"
+        },
+        "checkpoint_ready": {
+          "type": "boolean",
+          "description": "Whether checkpoint can be created"
+        },
+        "session_number": {
+          "type": "integer",
+          "description": "Current session number"
+        }
+      }
+    },
+    "recovery": {
+      "type": "object",
+      "description": "Recovery information",
+      "properties": {
+        "last_checkpoint": {
+          "type": "string",
+          "description": "Last checkpoint ID"
+        },
+        "can_resume": {
+          "type": "boolean",
+          "description": "Whether task can be resumed"
+        },
+        "resume_from": {
+          "type": "string",
+          "description": "Phase/step to resume from"
+        },
+        "stuck_reason": {
+          "type": "string",
+          "description": "Reason if stuck"
+        }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "description": "Memory context loaded for this task",
+      "properties": {
+        "local_patterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Patterns from local memory"
+        },
+        "global_patterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Patterns from global memory"
+        },
+        "gotchas": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Gotchas to be aware of"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "Phase": {
+      "type": "object",
+      "required": ["id", "name", "status"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Phase identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Phase name"
+        },
+        "description": {
+          "type": "string",
+          "description": "What this phase does"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "in_progress", "done", "skipped", "stuck"],
+          "description": "Phase status"
+        },
+        "files": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Files to create/modify"
+        },
+        "verification": {
+          "type": "string",
+          "description": "Verification command"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "evidence": {
+          "type": "string",
+          "description": "Verification evidence"
+        }
+      }
+    },
+    "Evidence": {
+      "type": "object",
+      "required": ["claim", "proof", "verified_at"],
+      "properties": {
+        "claim": {
+          "type": "string",
+          "description": "What we claim to have done"
+        },
+        "proof": {
+          "type": "string",
+          "description": "Actual verification output"
+        },
+        "verified_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When verified"
+        }
+      }
+    },
+    "Decision": {
+      "type": "object",
+      "required": ["question", "decision"],
+      "properties": {
+        "question": {
+          "type": "string",
+          "description": "Decision point"
+        },
+        "decision": {
+          "type": "string",
+          "description": "What was decided"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why this decision"
+        },
+        "decided_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

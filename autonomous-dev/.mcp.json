@@ -1,27 +1,9 @@
 {
   "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": ["-y", "@anthropic-ai/mcp-server-playwright"],
-      "description": "Browser automation for E2E testing, screenshots, and visual verification"
-    },
     "sequential-thinking": {
       "command": "npx",
       "args": ["-y", "@anthropic/mcp-sequential-thinking"],
       "description": "Structured thinking for complex problem solving"
-    },
-    "supabase": {
-      "command": "npx",
-      "args": ["-y", "@anthropic-ai/mcp-server-supabase"],
-      "env": {
-        "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}"
-      },
-      "description": "Supabase database operations, migrations, and type generation"
-    },
-    "context7": {
-      "command": "npx",
-      "args": ["-y", "@anthropic-ai/mcp-server-context7"],
-      "description": "Access up-to-date library documentation"
     }
   }
 }

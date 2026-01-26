@@ -22,7 +22,7 @@ supabase/config.toml
 ```
 
 **MCP Integration:**
-- Tool prefix: `mcp__supabase__*`
+- Tool prefix: `mcp__plugin_supabase_supabase__*`
 - Available operations: tables, columns, query, execute
 - Enables real-time schema validation
 
@@ -215,7 +215,7 @@ DATABASE_URL containing "neon"
 
 | Provider | MCP Available | Tool Prefix |
 |----------|---------------|-------------|
-| Supabase | ✅ Yes | `mcp__supabase__*` |
+| Supabase | ✅ Yes | `mcp__plugin_supabase_supabase__*` |
 | Firebase | ❌ No | - |
 | PlanetScale | ❌ No | - |
 | Neon | ❌ No | - |

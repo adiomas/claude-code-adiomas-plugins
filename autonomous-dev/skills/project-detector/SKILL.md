@@ -69,7 +69,7 @@ Check for database dependencies in package.json, pyproject.toml, or config files
 | `better-sqlite3` | SQLite |
 
 Also check for MCP availability:
-- If Supabase detected → check if `mcp__supabase__*` tools are available
+- If Supabase detected → check if `mcp__plugin_supabase_supabase__*` tools are available
 - MCP enables real-time schema validation
 
 ### Step 6: Identify Directory Patterns

@@ -22,15 +22,15 @@ When Supabase MCP is configured, these tools become available:
 
 | Tool | Purpose |
 |------|---------|
-| `mcp__supabase__execute_sql` | Run SQL queries |
-| `mcp__supabase__list_tables` | List database tables |
-| `mcp__supabase__list_extensions` | List PostgreSQL extensions |
-| `mcp__supabase__list_migrations` | List applied migrations |
-| `mcp__supabase__apply_migration` | Apply new migration |
-| `mcp__supabase__get_logs` | Get database logs |
-| `mcp__supabase__generate_typescript_types` | Generate TS types |
-| `mcp__supabase__get_project` | Get project info |
-| `mcp__supabase__search_docs` | Search Supabase docs |
+| `mcp__plugin_supabase_supabase__execute_sql` | Run SQL queries |
+| `mcp__plugin_supabase_supabase__list_tables` | List database tables |
+| `mcp__plugin_supabase_supabase__list_extensions` | List PostgreSQL extensions |
+| `mcp__plugin_supabase_supabase__list_migrations` | List applied migrations |
+| `mcp__plugin_supabase_supabase__apply_migration` | Apply new migration |
+| `mcp__plugin_supabase_supabase__get_logs` | Get database logs |
+| `mcp__plugin_supabase_supabase__generate_typescript_types` | Generate TS types |
+| `mcp__plugin_supabase_supabase__get_project` | Get project info |
+| `mcp__plugin_supabase_supabase__search_docs` | Search Supabase docs |
 
 ## When to Use
 
@@ -51,10 +51,10 @@ This skill is automatically invoked when:
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  1. ☐ Backup current schema                                     │
-│     → mcp__supabase__execute_sql (pg_dump equivalent)           │
+│     → mcp__plugin_supabase_supabase__execute_sql (pg_dump equivalent)           │
 │                                                                  │
 │  2. ☐ Generate types BEFORE change                              │
-│     → mcp__supabase__generate_typescript_types                  │
+│     → mcp__plugin_supabase_supabase__generate_typescript_types                  │
 │     → Save to .claude/types/before-migration.ts                 │
 │                                                                  │
 │  3. ☐ Create rollback migration                                 │
@@ -79,7 +79,7 @@ This skill is automatically invoked when:
 ### Step 1: Analyze Current Schema
 
 ```
-Use: mcp__supabase__list_tables
+Use: mcp__plugin_supabase_supabase__list_tables
 
 Output:
 ┌──────────────────────────────────────────────────────────────┐
@@ -94,7 +94,7 @@ Output:
 ### Step 2: Generate Baseline Types
 
 ```
-Use: mcp__supabase__generate_typescript_types
+Use: mcp__plugin_supabase_supabase__generate_typescript_types
 
 Save to: src/types/database.types.ts (existing)
 Backup to: .claude/types/pre-change-{timestamp}.ts
@@ -138,7 +138,7 @@ DROP POLICY IF EXISTS "Users can update own invoice status" ON invoices;
 ### Step 5: Apply to Dev Branch
 
 ```
-Use: mcp__supabase__apply_migration
+Use: mcp__plugin_supabase_supabase__apply_migration
 File: supabase/migrations/20260126_add_invoice_status.sql
 Branch: dev (or feature branch)
 ```
@@ -146,7 +146,7 @@ Branch: dev (or feature branch)
 ### Step 6: Regenerate Types
 
 ```
-Use: mcp__supabase__generate_typescript_types
+Use: mcp__plugin_supabase_supabase__generate_typescript_types
 
 Verify new types include:
 - invoices.status: 'pending' | 'paid' | 'cancelled' | 'overdue'
@@ -216,7 +216,7 @@ After any schema change:
 
 1. **Generate Types**
    ```
-   Use: mcp__supabase__generate_typescript_types
+   Use: mcp__plugin_supabase_supabase__generate_typescript_types
    Output: src/types/database.types.ts
    ```
 
@@ -275,11 +275,11 @@ After any schema change:
    deno test supabase/functions/function-name/
 
 3. Deploy
-   Use: mcp__supabase__deploy_edge_function
+   Use: mcp__plugin_supabase_supabase__deploy_edge_function
    Function: function-name
 
 4. Verify deployment
-   Use: mcp__supabase__get_edge_function
+   Use: mcp__plugin_supabase_supabase__get_edge_function
    Check: Status = active
 ```
 
@@ -292,7 +292,7 @@ Error: Migration failed - constraint violation
 Fix:
   1. Check existing data compatibility
   2. Add data migration step before schema change
-  3. Use: mcp__supabase__execute_sql to fix data
+  3. Use: mcp__plugin_supabase_supabase__execute_sql to fix data
   4. Retry migration
 ```
 
@@ -301,7 +301,7 @@ Fix:
 ```
 Error: Type 'string' is not assignable to type 'Invoice'
 Fix:
-  1. Regenerate types: mcp__supabase__generate_typescript_types
+  1. Regenerate types: mcp__plugin_supabase_supabase__generate_typescript_types
   2. Update code to match new schema
   3. Run: npx tsc --noEmit
 ```
@@ -314,7 +314,7 @@ Fix:
   1. Check auth context
   2. Verify user_id matches
   3. Review policy conditions
-  4. Use: mcp__supabase__execute_sql to debug
+  4. Use: mcp__plugin_supabase_supabase__execute_sql to debug
 ```
 
 ## Integration with Autonomous Workflow
@@ -384,7 +384,7 @@ SELECT * FROM invoices;
 After ANY schema change:
 
 ```
-mcp__supabase__generate_typescript_types
+mcp__plugin_supabase_supabase__generate_typescript_types
 npx tsc --noEmit
 ```
 
@@ -393,10 +393,10 @@ npx tsc --noEmit
 Never apply migrations directly to production:
 
 ```
-1. Create branch: mcp__supabase__create_branch
+1. Create branch: mcp__plugin_supabase_supabase__create_branch
 2. Apply migration to branch
 3. Test thoroughly
-4. Merge: mcp__supabase__merge_branch
+4. Merge: mcp__plugin_supabase_supabase__merge_branch
 ```
 
 ### 5. Document Schema Changes

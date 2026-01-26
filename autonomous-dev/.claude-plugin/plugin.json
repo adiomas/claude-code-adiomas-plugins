@@ -1,6 +1,6 @@
 {
   "name": "autonomous-dev",
-  "version": "4.2.0",
+  "version": "4.2.1",
   "description": "AGI-like autonomous development with single /do command, hybrid memory, adaptive execution, multi-session orchestration, and plan approval enforcement",
   "author": {
     "name": "Adiomas",

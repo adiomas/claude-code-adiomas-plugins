@@ -5,6 +5,73 @@ All notable changes to the autonomous-dev plugin will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.0] - 2026-01-26
+
+### Added
+- **Plan Approval Enforcement** (BREAKING CHANGE)
+  - `PreToolUse` hook (`enforce-plan-approval.sh`) that BLOCKS Edit/Write operations
+  - ORCHESTRATED tasks (complexity >= 3) now REQUIRE explicit user approval
+  - `set-plan-approved.sh` helper script for approval state management
+  - Hook displays clear error message if approval is missing
+
+- **MCP Server Integrations** (`.mcp.json`)
+  - Playwright MCP - Browser automation for E2E testing
+  - Sequential Thinking MCP - Structured problem solving
+  - Supabase MCP - Database operations and type generation
+  - Context7 MCP - Up-to-date library documentation
+
+- **New Skills**
+  - `playwright-mcp` - Deep E2E testing with MCP tools (screenshots, forms, accessibility)
+  - `supabase-deep` - Database workflow automation (migrations, types, RLS testing)
+
+- **Agent Pool Architecture**
+  - `pool-manager.sh` - Dynamic worktree pool management (5-8 parallel agents)
+  - Commands: `init`, `acquire`, `release`, `status`, `merge`, `cleanup`, `health`
+  - Integrated with `parallel-orchestrator` skill
+
+### Changed
+- `/do` command now includes mandatory Plan Approval Gate for ORCHESTRATED strategy
+- `strategist.md` updated with approval flow using `AskUserQuestion`
+- `orchestrated-executor.md` includes `verify_approval()` check before execution
+- `parallel-orchestrator` skill updated to use Agent Pool instead of individual worktrees
+- `hooks.json` updated with `PreToolUse` section for enforcement
+
+### Breaking Changes
+- ORCHESTRATED tasks will be BLOCKED if user approval is not obtained
+- Claude cannot skip the approval step - hook enforcement is automatic
+
+## [4.1.1] - 2026-01-26
+
+### Fixed
+- Added YAML frontmatter to `/do`, `/status`, `/cancel` commands for proper parsing
+
+## [4.1.0] - 2026-01-25
+
+### Changed
+- Bumped version for stability improvements
+- Minor documentation updates
+
+## [4.0.0] - 2026-01-25
+
+### Added
+- **AGI-Like Interface** - Single `/do` command replaces all `/auto-*` commands
+- **Intent Engine Pipeline** - Parser → Enricher → Classifier → Resolver → Strategist
+- **Hybrid Memory System** - Local (project) + Global (cross-project) memory
+- **Natural Language Processing** - Reference resolution ("ono od jučer" → yesterday's work)
+- **Adaptive Execution** - DIRECT (simple) vs ORCHESTRATED (complex) modes
+- **External Orchestrator** - `bin/claude-agi` for multi-session management
+- **Learning System** - Pattern extraction, confidence scoring, gotcha discovery
+
+### Changed
+- Unified all `/auto-*` commands into single `/do` command
+- Complexity-based automatic mode selection
+- Token budget system with 80%/95% thresholds
+
+### Deprecated
+- `/auto`, `/auto-smart`, `/auto-lite` - Use `/do` instead
+- `/auto-status` - Use `/status` instead
+- `/auto-cancel` - Use `/cancel` instead
+
 ## [3.6.0] - 2026-01-25
 
 ### Added

@@ -392,10 +392,10 @@
       "verification_command": "grep -q '/do' autonomous-dev/README.md && echo 'Found /do'",
       "expected_output": "Found /do",
       "complexity": "M",
-      "status": "pending",
-      "started_at": null,
-      "completed_at": null,
-      "evidence": null
+      "status": "done",
+      "started_at": "2025-01-26T15:20:00Z",
+      "completed_at": "2025-01-26T15:25:00Z",
+      "evidence": "Found /do"
     },
     {
       "id": "task-6.3",
@@ -406,10 +406,10 @@
       "verification_command": "test -f autonomous-dev/docs/migration-v4.md && echo 'File exists'",
       "expected_output": "File exists",
       "complexity": "S",
-      "status": "pending",
-      "started_at": null,
-      "completed_at": null,
-      "evidence": null
+      "status": "done",
+      "started_at": "2025-01-26T15:25:00Z",
+      "completed_at": "2025-01-26T15:28:00Z",
+      "evidence": "File exists"
     }
   ],
   "execution_strategy": {

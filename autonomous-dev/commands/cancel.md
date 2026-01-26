@@ -1,3 +1,10 @@
+---
+name: cancel
+description: Cancel autonomous execution and clean up state
+argument-hint: "[--force] [--discard]"
+allowed-tools: ["Bash", "Read", "Write"]
+---
+
 # /cancel - Cancel Execution and Cleanup
 
 Stops the current autonomous execution and cleans up state.

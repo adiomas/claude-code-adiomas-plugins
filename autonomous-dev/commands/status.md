@@ -1,3 +1,9 @@
+---
+name: status
+description: Check progress of autonomous execution
+allowed-tools: ["Bash", "Read"]
+---
+
 # /status - Check Execution Progress
 
 Shows current status of autonomous execution.

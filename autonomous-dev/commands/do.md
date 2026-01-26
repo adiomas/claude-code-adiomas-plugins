@@ -1,3 +1,12 @@
+---
+name: do
+description: |
+  AGI-Like Unified Command - one command to rule them all.
+  Replaces /auto, /auto-smart, /auto-lite. Just describe what you want.
+argument-hint: "<task in natural language>"
+allowed-tools: ["Task", "Bash", "Read", "Write", "Edit", "Glob", "Grep", "TodoWrite", "WebFetch", "AskUserQuestion", "Skill"]
+---
+
 # /do - AGI-Like Unified Command
 
 One command to rule them all. Replaces `/auto`, `/auto-smart`, `/auto-lite`, and all other `/auto-*` commands.

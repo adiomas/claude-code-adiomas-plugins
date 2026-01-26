@@ -378,10 +378,10 @@
       "verification_command": "bash -n autonomous-dev/tests/test-do-command.sh && echo 'Syntax OK'",
       "expected_output": "Syntax OK",
       "complexity": "M",
-      "status": "pending",
-      "started_at": null,
-      "completed_at": null,
-      "evidence": null
+      "status": "done",
+      "started_at": "2025-01-26T15:10:00Z",
+      "completed_at": "2025-01-26T15:15:00Z",
+      "evidence": "Syntax OK"
     },
     {
       "id": "task-6.2",

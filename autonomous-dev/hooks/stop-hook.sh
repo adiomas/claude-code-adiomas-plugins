@@ -309,6 +309,22 @@ MESSAGE="$MESSAGE Current task: $CURRENT_TASK."
 [[ -n "$MANDATORY_SKILLS" ]] && MESSAGE="$MESSAGE Mandatory skills: $MANDATORY_SKILLS."
 [[ "$OVERNIGHT_MODE" == "true" ]] && MESSAGE="$MESSAGE OVERNIGHT MODE ACTIVE - work autonomously, no user interaction."
 
+# =============================================================================
+# UPDATE STATE FOR HANDOFF DETECTION
+# =============================================================================
+# Ensure state reflects we're still in progress, so claude-agi knows to continue
+# if the session dies unexpectedly (token limit, crash, etc.)
+
+EXECUTION_STATE_FILE=".claude/auto-execution/state.yaml"
+if [[ -f "$EXECUTION_STATE_FILE" ]]; then
+    exec_status=$(yq -r '.status // "unknown"' "$EXECUTION_STATE_FILE" 2>/dev/null || echo "unknown")
+    if [[ "$exec_status" == "in_progress" || "$exec_status" == "pending" ]]; then
+        # Mark as handoff_pending so claude-agi knows to restart if session dies
+        yq -i '.status = "handoff_pending"' "$EXECUTION_STATE_FILE" 2>/dev/null || true
+        yq -i ".last_heartbeat = \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"" "$EXECUTION_STATE_FILE" 2>/dev/null || true
+    fi
+fi
+
 # Block exit and continue
 cat << EOF
 {

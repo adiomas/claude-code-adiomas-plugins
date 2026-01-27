@@ -7,12 +7,12 @@ allowed-tools: []
 
 # Autonomous Dev Plugin Version
 
-**Version: 4.2.2**
+**Version: 4.2.3**
 
 Plugin: autonomous-dev
 Marketplace: adiomas-plugins
 
-## What's New in 4.2.2
+## What's New in 4.2.3
 
 - **Session Handoff Fix** - Reliable multi-session execution
   - Fixed: `claude-agi` now properly continues when status is `in_progress`/`handoff_pending`

@@ -219,19 +219,52 @@ Ili će se automatski nastaviti ako koristiš overnight mode.
 /do --cancel                  # Cancel execution (alias for /cancel)
 ```
 
-## Overnight Mode
+## Execution Modes: In-Session vs Overnight
 
-For long-running tasks, use the external orchestrator:
+### /do = In-Session Execution (THIS COMMAND)
+
+`/do` plans and executes **immediately in the current session**:
+
+```
+/do Napravi dark mode
+→ Planira
+→ Pita za odobrenje
+→ ODMAH IZVRŠAVA
+→ Gotovo (u istoj sesiji)
+```
+
+Use `/do` when you:
+- Want to stay in the session and watch progress
+- Have simpler tasks (complexity 1-3)
+- Don't need overnight execution
+
+### /auto-prepare + claude-agi = Overnight Mode
+
+For long-running tasks that need overnight/unattended execution:
 
 ```bash
-# Interactive (with prompts)
-claude-agi
+# Step 1: Prepare (interactive planning)
+claude -p "/auto-prepare Napravi autentifikaciju s OAuth"
+# This creates state files and exits
 
-# Overnight (no prompts, auto-restart)
+# Step 2: Execute (autonomous)
 claude-agi --overnight
 ```
 
-See `bin/claude-agi` for details.
+`/auto-prepare` creates state files that `claude-agi` needs:
+- `.claude/auto-execution/state.yaml`
+- `.claude/auto-execution/tasks.json`
+- `.claude/auto-execution/next-session.md`
+
+Use this when you:
+- Want unattended overnight execution
+- Have complex tasks (complexity 4-5)
+- Want to preserve context (planning separate from execution)
+
+**IMPORTANT:** `/do` does NOT create state files for `claude-agi`.
+If you plan to use `claude-agi`, use `/auto-prepare` instead of `/do`.
+
+See `bin/claude-agi --help` for details.
 
 ## Learning
 
@@ -251,16 +284,20 @@ This makes future similar tasks faster and more accurate.
 
 ## Migration from Old Commands
 
-| Old | New |
-|-----|-----|
-| `/auto` | `/do` |
-| `/auto-smart` | `/do` |
-| `/auto-lite` | `/do` (auto-detects simple tasks) |
-| `/auto-prepare` | `/do` (auto-prepares if needed) |
-| `/auto-execute` | `/do --continue` |
-| `/auto-overnight` | `claude-agi --overnight` |
-| `/auto-status` | `/status` |
-| `/auto-cancel` | `/cancel` |
+| Old | New | Notes |
+|-----|-----|-------|
+| `/auto` | `/do` | In-session execution |
+| `/auto-smart` | `/do` | Auto-detects complexity |
+| `/auto-lite` | `/do` | Auto-detects simple tasks |
+| `/auto-prepare` | `/auto-prepare` | **Still needed for overnight mode!** |
+| `/auto-execute` | `/do --continue` | In-session resume |
+| `/auto-overnight` | `claude-agi --overnight` | Use with `/auto-prepare` |
+| `/auto-status` | `/status` | - |
+| `/auto-cancel` | `/cancel` | - |
+
+**Key distinction:**
+- `/do` = In-session (planira i odmah izvršava)
+- `/auto-prepare` + `claude-agi` = Overnight mode (planira, izlazi, izvršava kasnije)
 
 ---
 

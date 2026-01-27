@@ -16,7 +16,7 @@
 set -euo pipefail
 
 # Configuration
-readonly VERSION="4.0.0"
+readonly VERSION="4.2.2"
 readonly STATE_DIR=".claude/auto-execution"
 readonly STATE_FILE="$STATE_DIR/state.yaml"
 readonly HANDOFF_SIGNAL="$STATE_DIR/.handoff-requested"
@@ -70,6 +70,24 @@ Usage:
     claude-agi --cancel            Cancel execution and cleanup
     claude-agi --help              Show this help
 
+PREREQUISITE:
+    Before running claude-agi, you MUST run /auto-prepare first!
+
+    claude-agi reads state files created by /auto-prepare:
+      - .claude/auto-execution/state.yaml
+      - .claude/auto-execution/tasks.json
+      - .claude/auto-execution/next-session.md
+
+    Workflow:
+      1. claude -p "/auto-prepare <describe your task>"
+         (This plans interactively and creates state files)
+
+      2. claude-agi --overnight
+         (This executes the prepared plan)
+
+    NOTE: /do is for in-session execution (runs immediately).
+          For overnight mode, use /auto-prepare + claude-agi.
+
 Environment:
     CLAUDE_AGI_MAX_SESSIONS     Maximum sessions before stopping (default: 50)
     CLAUDE_AGI_SESSION_TIMEOUT  Session timeout in seconds (default: 3600)
@@ -77,11 +95,14 @@ Environment:
     CLAUDE_AGI_QUIET            Enable quiet mode (default: false)
 
 Examples:
-    # Start interactive execution
-    claude-agi
+    # Prepare first (in a Claude session)
+    claude -p "/auto-prepare Build user authentication with OAuth"
 
-    # Start overnight mode (runs until complete)
+    # Then run overnight
     claude-agi --overnight
+
+    # Or interactive
+    claude-agi
 
     # Resume after session interrupt
     claude-agi --continue
@@ -98,7 +119,18 @@ check_prerequisites() {
 
     # Check for state files
     if [[ ! -f "$STATE_FILE" ]]; then
-        log ERROR "No execution state found. Run /auto-prepare first."
+        log ERROR "No execution state found at $STATE_FILE"
+        echo ""
+        echo "claude-agi requires state files created by /auto-prepare."
+        echo ""
+        echo "To prepare for autonomous execution:"
+        echo "  1. Start a Claude session: claude"
+        echo "  2. Run: /auto-prepare <describe your task>"
+        echo "  3. Follow the interactive planning process"
+        echo "  4. Once done, exit and run: claude-agi --overnight"
+        echo ""
+        echo "NOTE: /do is for in-session execution and does NOT create"
+        echo "      state files for claude-agi. Use /auto-prepare instead."
         exit 1
     fi
 
@@ -367,7 +399,7 @@ run_continue() {
             exit 1
             ;;
         "none")
-            log ERROR "No execution state found. Run /auto-prepare first."
+            log ERROR "No execution state found. Run /auto-prepare in a Claude session first."
             exit 1
             ;;
         *)

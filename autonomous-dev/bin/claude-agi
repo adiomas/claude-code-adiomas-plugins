@@ -16,7 +16,7 @@
 set -euo pipefail
 
 # Configuration
-readonly VERSION="4.2.2"
+readonly VERSION="4.2.3"
 readonly STATE_DIR=".claude/auto-execution"
 readonly STATE_FILE="$STATE_DIR/state.yaml"
 readonly HANDOFF_SIGNAL="$STATE_DIR/.handoff-requested"

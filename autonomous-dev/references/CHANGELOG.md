@@ -5,6 +5,24 @@ All notable changes to the autonomous-dev plugin will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.3] - 2026-01-27
+
+### Fixed
+- **Session handoff reliability** - `claude-agi` now properly continues execution
+  - Fixed bug where interactive mode would break out of loop instead of continuing
+    when status was `in_progress` or `handoff_pending`
+  - `stop-hook.sh` now sets `handoff_pending` status before blocking, ensuring
+    `claude-agi` can detect and restart if session dies unexpectedly
+  - Added `last_heartbeat` timestamp to state for debugging
+
+### Added
+- **Auto-update hook** (`setup-auto-update-hook.sh`)
+  - Installs git post-push hook that automatically reinstalls `claude-agi`
+  - Ensures `claude-agi` binary stays in sync with plugin updates
+
+### Improved
+- Better logging in `claude-agi` - shows exit code and status after each session
+
 ## [4.2.2] - 2026-01-27
 
 ### Improved

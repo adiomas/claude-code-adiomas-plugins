@@ -14,6 +14,17 @@ Marketplace: adiomas-plugins
 
 ## What's New in 4.2.2
 
+- **Session Handoff Fix** - Reliable multi-session execution
+  - Fixed: `claude-agi` now properly continues when status is `in_progress`/`handoff_pending`
+  - `stop-hook.sh` sets `handoff_pending` for better session death detection
+  - Improved logging shows exit code and status after each session
+
+- **Auto-Update Hook** - Keep `claude-agi` in sync
+  - New: `setup-auto-update-hook.sh` installs git post-push hook
+  - Automatically reinstalls `claude-agi` after pushing plugin changes
+
+## What's New in 4.2.2
+
 - **AI Code Quality Score** - Semantic code quality analysis
   - Complexity score (1-10): Cognitive load measurement
   - Maintainability index (1-10): Long-term code health
